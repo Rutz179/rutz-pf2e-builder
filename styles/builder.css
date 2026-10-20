@@ -449,3 +449,4 @@
 .rpb-fam-detail .needs { list-style: none; padding: 0; margin: 8px 0; } .rpb-fam-detail .needs li { padding: 2px 0; }
 .rpb-fam-detail .needs .ok { color: var(--rpb-ok); } .rpb-fam-detail .needs .no { color: var(--rpb-no); } .rpb-fam-detail .needs .unk { color: var(--rpb-unk); }
 .rpb-fam-detail .rpb-choose { display: flex; gap: 6px; margin-bottom: 8px; } .rpb-fam-detail .rpb-choose button { width: auto; }
+.rpb-filter .opts.attrs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; } .rpb-filter .opts.attrs .lbl { color: var(--rpb-muted); font-size: 0.82rem; margin-right: 2px; } .rpb-filter .opts.attrs select { width: auto; height: 24px; margin-left: 4px; }

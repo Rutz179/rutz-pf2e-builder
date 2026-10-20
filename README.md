@@ -1,11 +1,23 @@
-# Rutz's PF2e HUD
+# Rutz's PF2e Character Builder
 
-PF2e 캐릭터 빌더 — 선조·유산·배경·클래스·능력치·기술·피트를 단계별로 고르고, 1~20레벨을 미리 계획하고(캐릭터당 계획 5개), 다른 빌드와 비교하고, 레벨업할 때 계획을 한 번에 적용합니다. 플레이어당 1캐릭터 생성(GM 대행), 초상화 업로드. 
+PF2e 캐릭터를 단계별로 만들고, 1~20레벨을 미리 계획하고, 레벨업할 때 계획을 한 번에 적용하는 Foundry VTT 모듈입니다.
+*Step-by-step character creation and 1–20 level planning for Pathfinder 2e.*
 
-A guided character builder and level planner for PF2e: plans up to level 20, compare builds, apply on level-up.
+- **단계별 만들기** — 선조·유산·배경·클래스·신앙·능력치·기술·주문. 번역 모듈의 이름과 설명을 그대로 보여 줍니다.
+- **레벨 계획** — 레벨마다 피트·기술 상승·능력치 상승·배울 주문을 미리 고르고, 선행 조건을 ✔/✖로 확인합니다.
+- **선택지 미리 고르기** — 뮤즈·후원자·혈통 같은 선택지를 설명과 함께 목록에서 비교해 고릅니다.
+- **주문** — 클래스 표대로 하루 슬롯과 배울 주문 수, 클래스·피트가 주는 집중 주문을 자동으로 설정합니다.
+- **사역마 빌더** — 사역마·주인 능력을 선행 조건(마녀 전용, 특정 사역마, 피트)과 함께 고릅니다.
+- **비교** — 여러 계획과 현재 시트를 PF2e가 계산한 수치로 나란히 봅니다.
+- **레벨업** — 레벨이 오르면 채팅 카드의 버튼 한 번으로 그 레벨의 계획을 적용합니다.
+- 플레이어에게 액터 생성 권한이 없어도 GM 화면이 대신 만들어 줍니다.
 
 ## 설치
+Foundry의 *모듈 설치* → 매니페스트 URL:
 ```
-https://github.com/Rutz179/pf2e-kr-builder/releases/latest/download/module.json
+https://github.com/Rutz179/rutz-pf2e-builder/releases/latest/download/module.json
 ```
-Foundry VTT v14 · PF2e.
+Foundry VTT v13–v14 · PF2e 시스템. 한국어/영어.
+
+## 여는 곳
+액터 탭 위의 「캐릭터 만들기 / 캐릭터 빌더」 버튼, 캐릭터 시트 머리의 「빌더」 버튼, 매크로 `game.rutzBuilder.open(actor)`.

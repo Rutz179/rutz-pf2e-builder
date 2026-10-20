@@ -1,7 +1,7 @@
 import { MID, sourceIdOf, t } from "./util.mjs";
 import { casterDefaults, entryName, traditionLabel } from "./spells.mjs";
 import { entryOf } from "./rules.mjs";
-import { placeClassSpells } from "./class-spells.mjs";
+import { placeClassSpells, withSpellLock } from "./class-spells.mjs";
 import { getDoc, loadIndex } from "./data.mjs";
 import { boostsUpTo, skillRanks, slotLevel } from "./rules.mjs";
 import { abcSources, itemSource, lores } from "./sources.mjs";
@@ -29,7 +29,7 @@ async function createOne(actor, src) {
 
 export async function applyCreation(actor, plan, options = {}) {
   answering(actor, plan);
-  try { return await creation(actor, plan, options); } finally { answering(actor, null); }
+  try { return await withSpellLock(actor, () => creation(actor, plan, options)); } finally { answering(actor, null); }
 }
 
 async function creation(actor, plan, { level = 1, progress = () => {} } = {}) {
@@ -177,7 +177,7 @@ export async function pendingUpTo(actor, plan, upTo) {
 
 export async function applyUpTo(actor, plan, upTo, options = {}) {
   answering(actor, plan);
-  try { return await upToLevel(actor, plan, upTo, options); } finally { answering(actor, null); }
+  try { return await withSpellLock(actor, () => upToLevel(actor, plan, upTo, options)); } finally { answering(actor, null); }
 }
 
 async function upToLevel(actor, plan, upTo, { raiseLevel = false } = {}) {

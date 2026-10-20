@@ -229,7 +229,25 @@ export async function placeClassSpells(actor, casting, level, className = "") {
  * The character's class spells, from what is on its sheet now (a feat or class feature gained outside the
  * builder, a level raised on the sheet). The tradition comes from the class, or the entry already there.
  */
-export async function syncActorClassSpells(actor) {
+/*
+ * One spell job per character at a time. Applying a plan creates feats, the createItem hook then
+ * resyncs class spells — when both ran side by side, each saw "no entry yet" and made one (two entries).
+ */
+const locks = new Map();
+export function withSpellLock(actor, fn) {
+  const key = actor?.uuid ?? "none";
+  const prev = locks.get(key) ?? Promise.resolve();
+  const next = prev.catch(() => null).then(fn);
+  locks.set(key, next);
+  next.finally(() => { if (locks.get(key) === next) locks.delete(key); }).catch(() => null);
+  return next;
+}
+
+export function syncActorClassSpells(actor) {
+  return withSpellLock(actor, () => syncNow(actor));
+}
+
+async function syncNow(actor) {
   if (actor?.type !== "character" || !actor.class) return [];
   const c = castingForClass(actor.class.slug ?? actor.class.system?.slug);
   if (!c) return [];

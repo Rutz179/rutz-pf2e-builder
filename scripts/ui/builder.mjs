@@ -51,7 +51,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
     this.plans = [];
     this.ui = {
       step: "overview", sub: "ancestry", planId: null, picker: null, detail: null, search: "", tab: null,
-      onlyMet: true, legacy: true, rarity: new Set(RARITY), limit: 200,
+      onlyMet: true, legacy: true, rarity: new Set(RARITY), limit: 200, attrBoost: new Set(), flaw: "any",
       previewLevel: actor ? Math.max(1, actor.level ?? 1) : Math.max(1, Number(setting("startLevel", 1)) || 1)
     };
     this.detailCache = new Map();
@@ -252,7 +252,22 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       ${pr}</button>`;
   }
 
-  filterBarHtml({ tabs = null, prereq = false } = {}) {
+  /** Ancestry / background: which attributes it boosts (fixed or a two-way choice — not the free boost) and its flaws. */
+  boostInfo(e) {
+    const slots = Object.values(e.boosts ?? {}).map(b => b?.value ?? []).filter(v => Array.isArray(v));
+    const boosts = new Set(slots.filter(v => v.length > 0 && v.length < 6).flat());
+    const flaws = new Set(Object.values(e.flaws ?? {}).flatMap(b => b?.value ?? []));
+    return { boosts, flaws };
+  }
+
+  attrFilterHtml() {
+    const chips = ATTRS.map(a => `<label class="chip ${this.ui.attrBoost.has(a) ? "on" : ""}"><input type="checkbox" data-a="f-boost" data-attr="${a}" ${this.ui.attrBoost.has(a) ? "checked" : ""}> +${esc(attrLabel(a))}</label>`).join("");
+    const flaw = ["any", "none", "has"].map(k => `<option value="${k}" ${this.ui.flaw === k ? "selected" : ""}>${t(`List.Flaw.${k}`)}</option>`).join("");
+    return `<div class="opts attrs"><span class="lbl" data-tooltip="${esc(t("List.BoostHint"))}">${t("List.Boost")}</span>${chips}
+      <select data-a="f-flaw">${flaw}</select></div>`;
+  }
+
+  filterBarHtml({ tabs = null, prereq = false, attrs = false } = {}) {
     const hideLegacy = setting("hideLegacy", false);
     const rar = RARITY.map(r => `<label class="chip ${this.ui.rarity.has(r) ? "on" : ""}"><input type="checkbox" data-a="f-rarity" data-r="${r}" ${this.ui.rarity.has(r) ? "checked" : ""}> ${esc(rarityLabel(r))}</label>`).join("");
     return `<div class="rpb-filter">
@@ -263,20 +278,30 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
           <span class="legend" data-tooltip="${esc(t("List.LegendHint"))}"><b class="ok">✔</b> ${t("List.LegendOk")} <b class="no">✖</b> ${t("List.LegendNo")} <b class="unk">?</b> ${t("List.LegendUnknown")}</span>` : ""}
         <label class="rpb-check ${hideLegacy ? "locked" : ""}" ${hideLegacy ? `data-tooltip="${esc(t("List.LegacyDisabled"))}"` : ""}><input type="checkbox" data-a="f-legacy" ${this.ui.legacy && !hideLegacy ? "checked" : ""} ${hideLegacy ? "disabled" : ""}><span>${t("List.Legacy")}</span></label>
         ${rar}
-      </div></div>`;
+      </div>${attrs ? this.attrFilterHtml() : ""}</div>`;
   }
 
   filtered(list) {
     const q = norm(this.ui.search);
-    return list.filter(e => (!q || e.search.includes(q)) && ((this.ui.legacy && !setting("hideLegacy", false)) || e.remaster !== false) && this.ui.rarity.has(e.rarity) && rarityAllowed(e.rarity));
+    const attrs = this.ui.attrBoost.size || this.ui.flaw !== "any";
+    return list.filter(e => (!q || e.search.includes(q)) && ((this.ui.legacy && !setting("hideLegacy", false)) || e.remaster !== false) && this.ui.rarity.has(e.rarity) && rarityAllowed(e.rarity)
+      && (!attrs || !["ancestry", "background"].includes(e.type) || this.attrOk(e)));
   }
 
-  pickHtml(title, listHtml, { tabs = null, prereq = false, back = null, hint = "" } = {}) {
+  attrOk(e) {
+    const { boosts, flaws } = this.boostInfo(e);
+    if ([...this.ui.attrBoost].some(a => !boosts.has(a))) return false;
+    if (this.ui.flaw === "none" && flaws.size) return false;
+    if (this.ui.flaw === "has" && !flaws.size) return false;
+    return true;
+  }
+
+  pickHtml(title, listHtml, { tabs = null, prereq = false, back = null, hint = "", attrs = false } = {}) {
     return `<div class="rpb-pick">
       <div class="rpb-pick-left">
         <div class="rpb-pick-title">${back ? `<button type="button" class="back" data-a="${back}"><i class="fa-solid fa-arrow-left"></i></button>` : ""}<h3>${title}</h3></div>
         ${hint ? `<p class="rpb-hint">${hint}</p>` : ""}
-        ${this.filterBarHtml({ tabs, prereq })}
+        ${this.filterBarHtml({ tabs, prereq, attrs })}
         <div class="rpb-list">${listHtml}</div>
       </div>
       <div class="rpb-detail">${this.ui.detail ? `<div class="rpb-detail-body" data-uuid="${this.ui.detail}"><p class="rpb-dim"><i class="fa-solid fa-spinner fa-spin"></i></p></div>` : `<p class="rpb-dim">${t("List.PickHint")}</p>`}</div>
@@ -356,7 +381,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
     if (plan.base === "sheet") return this.lockedSummary(plan, ["ancestry", "heritage"]);
     const sub = `<div class="rpb-subtabs"><button type="button" class="on">${t("Step.AncestryOnly")}</button>
       <button type="button" data-a="sub" data-sub="heritage" ${plan.ancestry ? "" : "disabled"}>${t("Step.Heritage")}${plan.heritage ? `: ${esc(plan.heritage.name)}` : ""}</button></div>`;
-    return sub + this.pickHtml(t("Pick.Ancestry"), this.currentListHtml());
+    return sub + this.pickHtml(t("Pick.Ancestry"), this.currentListHtml(), { attrs: true });
   }
 
   heritagesFor(plan) {
@@ -373,7 +398,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
 
   abcHtml(plan, kind) {
     if (plan.base === "sheet") return this.lockedSummary(plan, [kind]);
-    return this.pickHtml(t(`Pick.${{ class: "Class", background: "Background", deity: "Deity" }[kind]}`), this.currentListHtml(), { hint: kind === "deity" ? t("Pick.DeityHint") : "" });
+    return this.pickHtml(t(`Pick.${{ class: "Class", background: "Background", deity: "Deity" }[kind]}`), this.currentListHtml(), { hint: kind === "deity" ? t("Pick.DeityHint") : "", attrs: kind === "background" });
   }
 
   lockedSummary(plan, keys) {
@@ -1191,7 +1216,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
     const el = ev.target.closest("[data-a]");
     if (!el || el.disabled) return;
     const a = el.dataset.a;
-    if (["search", "f-met", "f-legacy", "f-rarity", "anc-alt", "ring", "plan-name", "char-name", "notes", "increase", "extra", "choice", "preview-level", "for-user", "f-alltrad", "cast-tradition", "cast-mode", "cast-attr"].includes(a)) return;
+    if (["search", "f-met", "f-legacy", "f-rarity", "f-boost", "f-flaw", "anc-alt", "ring", "plan-name", "char-name", "notes", "increase", "extra", "choice", "preview-level", "for-user", "f-alltrad", "cast-tradition", "cast-mode", "cast-attr"].includes(a)) return;
     ev.preventDefault();
     switch (a) {
       case "step":
@@ -1341,6 +1366,13 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
           c[{ "cast-tradition": "tradition", "cast-mode": "mode", "cast-attr": "attr" }[a]] = el.value || null;
           if (!c.tradition) p.spells.casting = null;
         });
+      case "f-boost":
+        if (el.checked) this.ui.attrBoost.add(el.dataset.attr); else this.ui.attrBoost.delete(el.dataset.attr);
+        el.closest(".chip")?.classList.toggle("on", el.checked);
+        return this.refreshList();
+      case "f-flaw":
+        this.ui.flaw = el.value;
+        return this.refreshList();
       case "f-rarity":
         if (el.checked) this.ui.rarity.add(el.dataset.r); else this.ui.rarity.delete(el.dataset.r);
         el.closest(".chip")?.classList.toggle("on", el.checked);

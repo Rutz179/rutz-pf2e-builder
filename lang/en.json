@@ -64,7 +64,14 @@
       "LegendNo": "not met",
       "LegendUnknown": "check yourself",
       "LegendHint": "Prerequisites are read from their text. ? means a condition the builder cannot judge (a deity, focus spells, 'A or B' …) — read it yourself. ? entries stay visible with 'prerequisites met'.",
-      "LegacyDisabled": "Legacy content is hidden by the world setting."
+      "LegacyDisabled": "Legacy content is hidden by the world setting.",
+      "Boost": "Boosts",
+      "BoostHint": "Only those that boost every chosen attribute (fixed or a two-way choice — not the free boost)",
+      "Flaw": {
+        "any": "flaw: any",
+        "none": "no flaw",
+        "has": "has a flaw"
+      }
     },
     "Feat": {
       "NoPrereq": "No prerequisites"
