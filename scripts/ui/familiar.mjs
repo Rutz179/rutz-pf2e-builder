@@ -203,12 +203,14 @@ export class FamiliarBuilder extends foundry.applications.api.ApplicationV2 {
       this._wired = content;
       content.addEventListener("click", ev => this.onClick(ev));
       content.addEventListener("change", ev => this.onChange(ev));
-      content.addEventListener("input", ev => {
-        if (ev.target.dataset.a !== "search") return;
+      const typed = ev => {
+        if (ev.isComposing || ev.target.dataset.a !== "search") return; // Korean IME: wait for the syllable
         this.ui.search = ev.target.value;
         clearTimeout(this._typing);
         this._typing = setTimeout(async () => { await this.render(); const box = this.element.querySelector('[data-a="search"]'); box?.focus(); box?.setSelectionRange(box.value.length, box.value.length); }, 200);
-      });
+      };
+      content.addEventListener("input", typed);
+      content.addEventListener("compositionend", typed);
       content.addEventListener("dblclick", ev => { const row = ev.target.closest(".list [data-a=peek]"); if (row) this.add(row.dataset.uuid); });
     }
     this.fillDetail();

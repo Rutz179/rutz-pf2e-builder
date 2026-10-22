@@ -16,6 +16,12 @@ import { answering } from "./choices.mjs";
  *   asks whatever the plan did not answer), background lores, and the feats
  *   of every slot up to the starting level.
  *
+ * applyRebuild — an existing character rebuilt from a plan made from
+ *   scratch (a respec): ancestry, heritage, background, class, deity, feats,
+ *   lores, spells and spellcasting entries, boosts and skill ranks are taken
+ *   off, then the plan goes on as for a new character at the sheet's level.
+ *   Equipment, coins, effects and conditions stay.
+ *
  * applyUpTo — an existing character reaching a level: the boosts, skill
  *   increases and feats the plan has for every level up to it that the sheet
  *   does not have yet. Nothing already on the sheet is replaced. Optionally
@@ -59,6 +65,40 @@ async function creation(actor, plan, { level = 1, progress = () => {} } = {}) {
   done.push(...await placeSpells(actor, plan, 1, level));
   await rememberPlan(actor, plan);
   return done;
+}
+
+/** What a rebuild takes off the sheet. */
+const BUILD_TYPES = ["ancestry", "heritage", "background", "class", "deity", "feat", "lore", "spellcastingEntry", "spell"];
+
+export function rebuildLoss(actor) {
+  const items = actor.items.filter(i => BUILD_TYPES.includes(i.type));
+  const of = type => items.filter(i => i.type === type);
+  return {
+    abc: ["ancestry", "heritage", "background", "class", "deity"].flatMap(of).map(i => i.name),
+    feats: of("feat").filter(f => !["classfeature", "ancestryfeature", "pfsboon", "curse", "deityboon"].includes(f.system?.category)).length,
+    spells: of("spell").length,
+    ids: items.map(i => i.id)
+  };
+}
+
+export async function applyRebuild(actor, plan, options = {}) {
+  answering(actor, plan);
+  try {
+    return await withSpellLock(actor, async () => {
+      const level = Math.max(1, Math.min(20, options.level ?? actor.level ?? 1));
+      (options.progress ?? (() => {}))(t("Apply.Step.Clear"));
+      const ids = [...new Set(rebuildLoss(actor).ids)];
+      if (ids.length) {
+        // PF2e also takes away what those items granted; skip whatever is already gone.
+        await actor.deleteEmbeddedDocuments("Item", ids.filter(id => actor.items.has(id)));
+      }
+      const src = actor._source.system;
+      const reset = { "system.build.attributes.boosts": Object.fromEntries([1, 5, 10, 15, 20].map(lv => [lv, []])) };
+      for (const k of Object.keys(src.skills ?? {})) reset[`system.skills.${k}.rank`] = 0;
+      await actor.update(reset, { rpbApply: true });
+      return await creation(actor, plan, { ...options, level });
+    });
+  } finally { answering(actor, null); }
 }
 
 /** How the plan casts: what was set in the spells step, else the class's usual way. */

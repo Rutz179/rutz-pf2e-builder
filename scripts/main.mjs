@@ -32,6 +32,7 @@ function registerSettings() {
   });
   s("startLevel", { name: t("Settings.StartLevel"), type: Number, default: 1, range: { min: 1, max: 20, step: 1 } });
   s("allowLevelUp", { name: t("Settings.AllowLevelUp"), hint: t("Settings.AllowLevelUpHint"), type: Boolean, default: true });
+  s("allowRebuild", { name: t("Settings.AllowRebuild"), hint: t("Settings.AllowRebuildHint"), type: Boolean, default: true });
   s("levelUpCard", { name: t("Settings.LevelUpCard"), hint: t("Settings.LevelUpCardHint"), type: Boolean, default: true });
   s("promptNewPlayers", { name: t("Settings.PromptNew"), hint: t("Settings.PromptNewHint"), type: Boolean, default: true });
   s("rarityLimit", { name: t("Settings.Rarity"), hint: t("Settings.RarityHint"), type: String, default: "all", choices: { all: t("Settings.RarityAll"), uncommon: t("Settings.RarityUncommon"), common: t("Settings.RarityCommon") } });

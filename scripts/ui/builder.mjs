@@ -9,7 +9,7 @@ import {
 import { activePlanId, clearDraft, clonePlan, draftOf, lockedAt, maxPlans, newPlan, planFromActor, plansOf, picksOf, refreshSheetPlan, saveDraft, savePlans, setPick } from "../plan.mjs";
 import { questionHolders, questionsOf } from "../choices.mjs";
 import { previewStats } from "../preview.mjs";
-import { applyCreation, applyUpTo, pendingUpTo } from "../apply.mjs";
+import { applyCreation, applyRebuild, applyUpTo, pendingUpTo, rebuildLoss } from "../apply.mjs";
 import { canCreateMore, canUpload, requestActor, uploadImage } from "../create.mjs";
 import { openCompare } from "./compare.mjs";
 import { deityAlignment } from "../deity-alignment.mjs";
@@ -35,6 +35,13 @@ const RARITY = ["common", "uncommon", "rare", "unique"];
 
 function ownerOrDraft(actor) {
   return actor ? actor.isOwner : true;
+}
+
+/** Make any plan follow the character's sheet: what the sheet has is taken from it, the rest (later levels) kept. */
+function toSheetPlan(plan, actor) {
+  const base = planFromActor(actor, plan.name);
+  return refreshSheetPlan({ ...base, id: plan.id, feats: plan.feats ?? {}, skills: plan.skills ?? base.skills, boosts: { ...(base.boosts ?? {}), ...(plan.boosts ?? {}) },
+    choices: plan.choices ?? base.choices, spells: plan.spells ?? base.spells, notes: plan.notes ?? "", updated: Date.now() }, actor);
 }
 
 export class BuilderApp extends foundry.applications.api.ApplicationV2 {
@@ -240,11 +247,13 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
 
   /* ---------------- shared list + detail ---------------- */
 
-  rowHtml(e, { selected = false, prereq = null } = {}) {
+  rowHtml(e, { selected = false, prereq = null, check = false } = {}) {
     const pr = prereq ? `<span class="pr ${prereq.state}" data-tooltip="${esc(prereq.parts.map(p => `${p.ok === true ? "✔" : p.ok === false ? "✖" : "?"} ${p.text}`).join("<br>") || t("Feat.NoPrereq"))}">${prereq.state === "ok" ? "✔" : prereq.state === "no" ? "✖" : "?"}</span>` : "";
     const lv = e.type === "feat" || e.type === "heritage" ? (e.type === "feat" ? `<span class="lvl">${e.level}</span>` : "") : "";
-    return `<button type="button" class="rpb-row ${selected ? "sel" : ""} ${this.ui.detail === e.uuid ? "peek" : ""} ${prereq?.state === "no" ? "unmet" : ""}" data-a="peek" data-uuid="${e.uuid}">
-      ${lv}<img src="${esc(e.img)}" alt="" loading="lazy"><span class="nm">${esc(e.name)}${e.original && !e.name.includes(e.original) ? `<small>${esc(e.original)}</small>` : ""}</span>
+    // A checkbox to tick a spell in or out without opening it (the row itself still shows the details).
+    const box = check ? `<span class="chk ${selected ? "on" : ""}" data-a="check" data-uuid="${e.uuid}" data-tooltip="${esc(t(selected ? "Spells.Untick" : "Spells.Tick"))}"><i class="fa-${selected ? "solid fa-square-check" : "regular fa-square"}"></i></span>` : "";
+    return `<button type="button" class="rpb-row ${check ? "has-chk" : ""} ${selected ? "sel" : ""} ${this.ui.detail === e.uuid ? "peek" : ""} ${prereq?.state === "no" ? "unmet" : ""}" data-a="peek" data-uuid="${e.uuid}">
+      ${box}${lv}<img src="${esc(e.img)}" alt="" loading="lazy"><span class="nm">${esc(e.name)}${e.original && !e.name.includes(e.original) ? `<small>${esc(e.original)}</small>` : ""}</span>
       ${e.action ? `<span class="act">${glyph(e.action)}</span>` : ""}
       ${alignmentHtml(e)}
       ${e.rarity !== "common" ? `<span class="rar ${e.rarity}">${esc(rarityLabel(e.rarity))}</span>` : ""}
@@ -340,7 +349,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       const chosen = new Set(spellsAt(plan, lv).map(r => r.uuid));
       const other = plannedUuids(plan);
       const all = this.filtered(list);
-      const rows = all.slice(0, this.ui.limit).map(e => this.rowHtml({ ...e, type: "feat", level: e.cantrip ? "C" : e.level }, { selected: chosen.has(e.uuid) }).replace('class="rpb-row', `class="rpb-row ${other.has(e.uuid) && !chosen.has(e.uuid) ? "elsewhere" : ""}`)).join("");
+      const rows = all.slice(0, this.ui.limit).map(e => this.rowHtml({ ...e, type: "feat", level: e.cantrip ? "C" : e.level }, { selected: chosen.has(e.uuid), check: this.editable }).replace('class="rpb-row', `class="rpb-row ${other.has(e.uuid) && !chosen.has(e.uuid) ? "elsewhere" : ""}`)).join("");
       const more = all.length > this.ui.limit ? `<button type="button" class="rpb-more" data-a="more">${t("List.More", { n: all.length - this.ui.limit })}</button>` : "";
       return (rows || `<p class="rpb-dim">${t("List.Empty")}</p>`) + more + `<div class="rpb-count">${t("List.Count", { n: all.length })}</div>`;
     }
@@ -844,8 +853,11 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       action = `<button type="button" class="primary" data-a="apply" data-mode="current"><i class="fa-solid fa-wand-magic-sparkles"></i> ${t("Overview.ApplyCurrent", { level: this.actor.level })}</button>
         ${game.user.isGM || setting("allowLevelUp", true) ? `<button type="button" data-a="apply" data-mode="next"><i class="fa-solid fa-angles-up"></i> ${t("Level.RaiseApply", { level: this.actor.level + 1 })}</button>` : ""}
         ${activePlanId(this.actor) !== plan.id ? `<button type="button" data-a="plan-active"><i class="fa-solid fa-star"></i> ${t("Plan.MakeActive")}</button>` : `<p class="rpb-hint"><i class="fa-solid fa-star"></i> ${t("Plan.ActiveHint")}</p>`}`;
-    } else if (plan.base === "free" && this.actor) {
-      action = `<p class="rpb-hint"><i class="fa-solid fa-flask"></i> ${t("Plan.FreeNote")}</p>`;
+    } else if (plan.base === "free" && this.actor?.isOwner) {
+      const may = game.user.isGM || setting("allowRebuild", true);
+      action = `${may ? `<button type="button" class="primary" data-a="rebuild"><i class="fa-solid fa-wand-magic-sparkles"></i> ${t("Plan.Rebuild", { level: this.actor.level })}</button>` : ""}
+        <button type="button" data-a="free-convert" data-tooltip="${esc(t("Plan.ConvertHint"))}"><i class="fa-solid fa-user-pen"></i> ${t("Plan.Convert")}</button>
+        <p class="rpb-hint">${t("Plan.FreeNote")}</p>`;
     }
     return `<div class="rpb-overview">
       <div class="col">
@@ -1052,6 +1064,19 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
 
   /* ---------------- choosing ---------------- */
 
+  /** The spell list's checkbox: in or out at this level, the details panel stays where it is. */
+  tickSpell(uuid) {
+    if (this.ui.picker?.kind !== "spell" || !this.editable) return;
+    const e = this.idx.byUuid.get(uuid);
+    if (!e || !this.canChooseNow(uuid)) { this.peek(uuid); return; }
+    const lv = this.ui.picker.level;
+    this.mutate(p => {
+      const list = (p.spells.byLevel[lv] ??= []);
+      const i = list.findIndex(r => r.uuid === uuid);
+      if (i >= 0) list.splice(i, 1); else list.push(refOf(e));
+    });
+  }
+
   choose(uuid) {
     if (this.ui.picker?.kind === "choice") {
       const { q, prev } = this.ui.picker;
@@ -1241,6 +1266,8 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
         this.ui.detail = null;
         return this.render();
       case "plan-menu": return this.planMenu();
+      case "free-convert": return this.convertFree();
+      case "rebuild": return this.rebuild();
       case "plan-del": return this.deletePlan();
       case "plan-active":
         await this.actor.setFlag(MID, "activePlan", this.plan.id);
@@ -1249,6 +1276,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       case "familiar": return (await import("./familiar.mjs")).openFamiliar(this.actor);
       case "peek": return this.peek(el.dataset.uuid);
       case "choose": return this.choose(el.dataset.uuid);
+      case "check": return this.tickSpell(el.dataset.uuid);
       case "to-chat": return this.toChat(el.dataset.uuid);
       case "unlock": {
         if (!this.plan.unlocked) {
@@ -1396,6 +1424,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
   /* ---------------- plans ---------------- */
 
   async planMenu() {
+    // From the sheet, a build from scratch (applied later by rebuilding the character), or a copy.
     const kinds = [["sheet", t("Plan.NewSheet"), "fa-user-pen"], ["free", t("Plan.NewFree"), "fa-flask"], ["copy", t("Plan.NewCopy"), "fa-copy"]];
     const choice = await foundry.applications.api.DialogV2.wait({
       window: { title: t("Plan.AddTitle") },
@@ -1414,6 +1443,48 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
     this.ui.step = plan.base === "free" ? "ancestry" : "overview";
     await this.save();
     this.render();
+  }
+
+  /** A build from scratch → one that continues from the sheet; its picks for later levels are kept. */
+  async convertFree() {
+    const plan = this.plan;
+    if (plan?.base !== "free" || !this.actor) return;
+    const ok = await foundry.applications.api.DialogV2.confirm({ window: { title: t("Plan.Convert") }, content: `<p>${t("Plan.ConvertAsk", { name: esc(plan.name) })}</p>`, rejectClose: false }).catch(() => false);
+    if (!ok) return;
+    const fresh = toSheetPlan(plan, this.actor);
+    this.plans = this.plans.map(p => (p.id === plan.id ? fresh : p));
+    this.ui.step = "overview";
+    await this.save();
+    ui.notifications.info(t("Plan.Converted", { name: fresh.name }));
+    this.render();
+  }
+
+  /** A build from scratch put on this character: the old build comes off, this one goes on up to the sheet's level. */
+  async rebuild() {
+    const actor = this.actor;
+    const plan = this.plan;
+    if (!actor?.isOwner || plan?.base !== "free" || !(game.user.isGM || setting("allowRebuild", true))) return;
+    const level = actor.level;
+    const loss = rebuildLoss(actor);
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: t("Plan.RebuildTitle", { name: plan.name }) },
+      content: `<p>${t("Plan.RebuildBody", { actor: `<b>${esc(actor.name)}</b>`, level })}</p>
+        <p><b>${t("Plan.RebuildLose")}:</b> ${esc(t("Plan.RebuildLoseList", { abc: loss.abc.join(", ") || "—", feats: loss.feats, spells: loss.spells }))}</p>
+        <p class="hint">${t("Plan.RebuildKeep")}</p>${pendingHtml(await this.pendingList(plan, level))}<p class="hint">${t("Apply.Prompts")}</p>`,
+      rejectClose: false
+    }).catch(() => false);
+    if (!ok) return;
+    try {
+      const done = await applyRebuild(actor, plan, { level, progress: msg => ui.notifications.info(msg) });
+      ui.notifications.info(t("Plan.RebuildDone", { name: actor.name, n: done.length }));
+      this.plans = plansOf(actor).map(p => refreshSheetPlan(p, actor));
+      this.ui.planId = plan.id;
+      this.ui.step = "overview";
+      this.render();
+    } catch (err) {
+      console.error(`${MID} | rebuild`, err);
+      ui.notifications.error(`${t("Apply.Failed")} ${err.message ?? err}`);
+    }
   }
 
   async deletePlan() {

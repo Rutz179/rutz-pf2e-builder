@@ -29,7 +29,7 @@
     },
     "Plan": {
       "SheetHint": "Sheet plan — continues from the sheet as it is and plans the levels to come. Can be applied when you level up.",
-      "FreeHint": "Free plan — a what-if build from scratch (another class, another archetype …), for comparing.",
+      "FreeHint": "A build from scratch — apply it to an existing character with 'Rebuild with this'.",
       "ActiveHint": "Main plan, applied on level-up",
       "AddHint": "Add a plan",
       "AddTitle": "New plan",
@@ -45,7 +45,18 @@
       "Delete": "Delete plan",
       "DeleteBody": "Delete the plan '{name}'? This cannot be undone.",
       "MakeActive": "Make main plan",
-      "FreeNote": "A free plan, for comparing. To apply to the sheet, use a 'continue from the sheet' plan."
+      "FreeNote": "A build from scratch. Applying it rebuilds the character with it (up to the current level). Gear, coins and effects stay.",
+      "Convert": "Continue from the sheet",
+      "ConvertHint": "Keeps the sheet as it is for the levels so far and takes only the picks for later levels.",
+      "Rebuild": "Rebuild with this (Lv {level})",
+      "RebuildTitle": "Rebuild with '{name}'",
+      "RebuildBody": "{actor} is rebuilt with this plan up to level {level}.",
+      "RebuildLose": "Taken off and put on anew",
+      "RebuildLoseList": "{abc} · {feats} feats · {spells} spells · attribute boosts · skill ranks",
+      "RebuildKeep": "Gear, coins, effects, conditions and HP stay. This can't be undone — duplicate the actor first if you want a backup.",
+      "RebuildDone": "{name} — rebuilt ({n} changes). The plan follows the sheet from now on.",
+      "ConvertAsk": "Continue '{name}' from the sheet? The levels so far become the sheet's; the picks for later levels are kept.",
+      "Converted": "'{name}' now continues from the sheet."
     },
     "Top": {
       "PreviewHint": "Preview attributes, skills and statistics at this level",
@@ -258,7 +269,8 @@
         "class": "Class…",
         "Feats": "Feats…",
         "deity": "Deity…",
-        "ClassSpells": "Spellcasting · class spells"
+        "ClassSpells": "Spellcasting · class spells",
+        "Clear": "Taking off the current build…"
       },
       "Replaced": "Replaced: removed {old}"
     },
@@ -330,7 +342,9 @@
       "LevelCantrips": "Cantrips count as level-up spells",
       "LevelCantripsHint": "For spellbook/familiar classes (wizard, witch …) a cantrip may be one of the two spells learned each level. The rules text ('ranks for which you have spell slots') is ambiguous — decide at your table.",
       "AutoClassSpells": "Add class spells automatically",
-      "AutoClassSpellsHint": "When a feat or class feature is gained outside the builder (on the sheet), the spells it grants (e.g. a witch lesson's hex and familiar spell) go into the spellcasting entries."
+      "AutoClassSpellsHint": "When a feat or class feature is gained outside the builder (on the sheet), the spells it grants (e.g. a witch lesson's hex and familiar spell) go into the spellcasting entries.",
+      "AllowRebuild": "Players may rebuild their character in the builder",
+      "AllowRebuildHint": "When off, only the GM can rebuild a character with a from-scratch plan."
     },
     "Ask": {
       "Title": "Choices",
@@ -417,7 +431,9 @@
       "Resync": "Sync class spells",
       "ResyncHint": "Put the spells granted by the sheet's class features and feats (patron, lessons, bloodline …) into the spellcasting and focus entries, and set the daily slots from the class table.",
       "Resynced": "Class spells synced: {list}",
-      "ResyncNone": "No class spells to add."
+      "ResyncNone": "No class spells to add.",
+      "Tick": "Tick to learn it at this level",
+      "Untick": "Untick to take it out"
     },
     "DeityAlignment": {
       "good": "Good",
