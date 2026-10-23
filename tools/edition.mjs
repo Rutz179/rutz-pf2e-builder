@@ -40,7 +40,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "module.json"), "utf
 const SKIP = new Set([".git", ".github", ".private", "dist", "node_modules", "tools", "media", "edition.json", ".gitignore", ".DS_Store"]);
 // Free modules keep their tools/ folder (helpers that ship with them); only these are left out.
 const FREE_SKIP = new Set([".git", ".github", ".private", "dist", "node_modules", "media", ".gitignore", ".DS_Store", "Thumbs.db", ".vscode"]);
-const FREE_SKIP_FILES = new Set(["tools/edition.mjs", "tools/release.mjs", "tools/local.config.json", "tools/last-release.json"]);
+const FREE_SKIP_FILES = new Set(["tools/edition.mjs", "tools/release.mjs", "tools/update-pages.mjs", "tools/local.config.json", "tools/last-release.json"]);
 const freeLeftOut = rel => FREE_SKIP_FILES.has(rel) || /(^|\/)(node_modules|\.DS_Store|LOG|LOG\.old)(\/|$)/.test(rel) || /(^|\/)package-lock\.json$|\.env$/.test(rel);
 const TEXT = /\.(mjs|js|css|hbs|html)$/;
 
@@ -100,10 +100,15 @@ function moduleJsonFor(ed) {
   return m;
 }
 
+/** Never in a module zip: a wiki clone or any other git repository inside, zip files at the top. */
+const stray = (entry, rel, dir) => entry.name === ".git" || (entry.isDirectory() && (/\.wiki$/i.test(entry.name) || fs.existsSync(path.join(dir, entry.name, ".git"))))
+  || (!rel && entry.isFile() && /\.zip$/i.test(entry.name));
+
 function walk(dir, rel = "") {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (!rel && (FREE ? FREE_SKIP : SKIP).has(entry.name)) continue;
+    if (stray(entry, rel, dir)) continue;
     const r = rel ? `${rel}/${entry.name}` : entry.name;
     if (FREE && freeLeftOut(r)) continue;
     if (entry.isDirectory()) out.push(...walk(path.join(dir, entry.name), r));

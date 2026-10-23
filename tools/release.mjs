@@ -68,11 +68,21 @@ async function gh(method, url, body, type) {
   const res = await fetch(full, { method, headers, body: body === undefined ? undefined : isRaw ? body : JSON.stringify(body) });
   const text = await res.text();
   if (!res.ok) {
-    const err = new Error(res.status === 401 ? "GitHub 토큰이 맞지 않거나 만료됐습니다: node tools/release.mjs --set-token" : `GitHub ${method} ${url} → ${res.status} ${text.slice(0, 300)}`);
+    const noAccess = res.status === 403 && /not accessible by (personal access|integration)/i.test(text);
+    const err = new Error(res.status === 401 ? "GitHub 토큰이 맞지 않거나 만료됐습니다: node tools/release.mjs --set-token"
+      : noAccess ? tokenHelp() : `GitHub ${method} ${url} → ${res.status} ${text.slice(0, 300)}`);
     err.status = res.status;
     throw err;
   }
   return text ? JSON.parse(text) : null;
+}
+
+function tokenHelp() {
+  return `GitHub 토큰에 ${repoName} 저장소 쓰기 권한이 없습니다 (아무것도 바꾸지 않았습니다).\n`
+    + `  github.com → 오른쪽 위 사진 → Settings → Developer settings → Personal access tokens → Fine-grained tokens → 쓰는 토큰 → Edit\n`
+    + `  · Repository access: All repositories, 또는 Only select repositories에 ${repoName.split("/")[1]} 추가\n`
+    + `  · Permissions → Repository permissions → Contents: Read and write\n`
+    + `  → Update. 토큰 값은 그대로라 다시 넣을 필요 없음. 그다음 같은 버전으로 다시 릴리스.`;
 }
 
 async function upload(release, file, name, type) {
@@ -82,16 +92,25 @@ async function upload(release, file, name, type) {
 }
 
 /** The public repo's README.md follows the local one. */
+/** README.md and its translations (README.ko.md …) in the folder's top level. */
+function readmeFiles() {
+  return fs.readdirSync(ROOT).filter(f => /^README(\.[A-Za-z-]+)?\.md$/.test(f)).sort((a, b) => (a === "README.md" ? -1 : b === "README.md" ? 1 : a.localeCompare(b)));
+}
+
 async function pushReadme() {
-  const text = fs.readFileSync(path.join(ROOT, "README.md"), "utf8");
-  let sha;
-  try {
-    const cur = await gh("GET", "/contents/README.md");
-    sha = cur.sha;
-    if (Buffer.from(cur.content, "base64").toString("utf8") === text) return false;
-  } catch (err) { if (err.status !== 404) throw err; }
-  await gh("PUT", "/contents/README.md", { message: "README", content: Buffer.from(text).toString("base64"), ...(sha ? { sha } : {}) });
-  return true;
+  let sent = 0;
+  for (const name of readmeFiles()) {
+    const text = fs.readFileSync(path.join(ROOT, name), "utf8");
+    let sha;
+    try {
+      const cur = await gh("GET", `/contents/${name}`);
+      sha = cur.sha;
+      if (Buffer.from(cur.content, "base64").toString("utf8") === text) continue;
+    } catch (err) { if (err.status !== 404) throw err; }
+    await gh("PUT", `/contents/${name}`, { message: name.replace(/\.md$/, ""), content: Buffer.from(text).toString("base64"), ...(sha ? { sha } : {}) });
+    sent++;
+  }
+  return sent > 0;
 }
 
 /**
@@ -128,7 +147,7 @@ async function tidyPublic() {
   const repo = await gh("GET", "");
   const branch = repo.default_branch;
   const head = await gh("GET", `/git/ref/heads/${branch}`);
-  const keep = ["README.md", "LICENSE", "LICENSE.md"].filter(f => fs.existsSync(path.join(ROOT, f)));
+  const keep = [...readmeFiles(), "LICENSE", "LICENSE.md"].filter(f => fs.existsSync(path.join(ROOT, f)));
   console.log(`${repoName} (${branch}): 공개 저장소에 ${keep.join(", ")} 만 남깁니다. 이전 기록(커밋·태그·릴리스)은 그대로입니다.`);
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const ok = (await rl.question("진행할까요? (y/N) ")).trim().toLowerCase();
@@ -206,8 +225,10 @@ async function main() {
   if (flag("--readme")) return console.log((await pushReadme()) ? "README를 올렸습니다." : "README가 이미 같습니다.");
   if (flag("--media")) {
     if (originIsPublic()) return console.log("소스가 공개 저장소에 있으니 media/는 커밋·푸시로 올라갑니다.");
+    // The README(s) go with the pictures, so a page that shows them is up at once (no release needed).
     const n = await pushMedia();
-    return console.log(n ? `media 파일 ${n}개를 공개 저장소에 올렸습니다.` : "media/가 이미 같습니다 (또는 비어 있음).");
+    console.log(n ? `media 파일 ${n}개를 공개 저장소에 올렸습니다.` : "media/가 이미 같습니다 (또는 비어 있음).");
+    return console.log((await pushReadme()) ? `README(${readmeFiles().join(", ")})도 올렸습니다.` : "README는 이미 같습니다.");
   }
 
   const version = (args.find(a => !a.startsWith("--")) ?? "").replace(/^v/, "");
@@ -224,6 +245,9 @@ async function main() {
   if (toGitHub) {
     if (!token) throw new Error("GitHub 토큰이 없습니다: node tools/release.mjs --set-token");
     try { await gh("GET", `/releases/tags/${tag}`); throw new Error(`${tag} 릴리스가 이미 있습니다. 버전을 올리세요.`); } catch (err) { if (err.status !== 404) throw err; }
+    // Reading works with any token (public repo); making a release needs write access to this repo.
+    const repo = await gh("GET", "");
+    if (repo?.permissions && !repo.permissions.push) throw new Error(tokenHelp());
   }
   if (flag("--hub-only") && !toHub) throw new Error("허브 설정이 없습니다 (허브 폴더에서 node tools/setup.mjs).");
   if (toHub) {
@@ -246,7 +270,7 @@ async function main() {
   const pub = edition.public ?? "lite";
   const built = { [pub]: build(pub) };
   if (toHub && !built.plus) built.plus = build("plus");
-  console.log(`[2] ${Object.keys(built).join(" + ")} 판을 만들었습니다 (공개판: ${pub})`);
+  console.log(FREE ? "[2] 모듈 zip을 만들었습니다 (무료 모듈)" : `[2] ${Object.keys(built).join(" + ")} 판을 만들었습니다 (공개판: ${pub})`);
 
   // 3. GitHub release on the public repo
   if (toGitHub) {
