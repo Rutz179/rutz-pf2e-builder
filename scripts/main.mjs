@@ -71,7 +71,7 @@ function directoryButton(app, html) {
   btn.className = "rpb-dir";
   const mine = targetFor();
   const making = !mine && canCreateMore();
-  btn.innerHTML = `<i class="fa-solid fa-hammer"></i> ${esc(making ? t("Dir.Create") : t("Dir.Builder"))}`;
+  btn.innerHTML = `<i class="fa-solid fa-compass-drafting"></i> ${esc(making ? t("Dir.Create") : t("Dir.Builder"))}`;
   btn.addEventListener("click", ev => {
     ev.preventDefault();
     if (game.user.isGM && !targetFor()) return openBuilder(null);
@@ -83,24 +83,24 @@ function directoryButton(app, html) {
 function sheetButtonV1(sheet, buttons) {
   const actor = sheet.actor ?? sheet.document;
   if (actor?.type === "familiar" && (actor.isOwner || game.user.isGM)) {
-    buttons.unshift({ label: t("Fam.Short"), class: "rpb-fam-open", icon: "fa-solid fa-feather", onclick: () => openFamiliar(actor) });
+    buttons.unshift({ label: t("Fam.Short"), class: "rpb-fam-open", icon: "fa-solid fa-feather fa-fw", onclick: () => openFamiliar(actor) });
     return;
   }
   if (actor?.type !== "character" || !(actor.isOwner || game.user.isGM)) return;
-  buttons.unshift({ label: t("Sheet.Button"), class: "rpb-open", icon: "fa-solid fa-hammer", onclick: () => openBuilder(actor) });
+  buttons.unshift({ label: t("Sheet.Button"), class: "rpb-open", icon: "fa-solid fa-compass-drafting fa-fw", onclick: () => openBuilder(actor) });
 }
 
 function sheetButtonV2(app, controls) {
   const actor = app.document ?? app.actor;
   if (actor?.documentName === "Actor" && actor.type === "familiar" && (actor.isOwner || game.user.isGM) && !controls.some(c => c.action === "rpbFam")) {
-    controls.unshift({ icon: "fa-solid fa-feather", label: t("Fam.Short"), action: "rpbFam", onClick: () => openFamiliar(actor) });
+    controls.unshift({ icon: "fa-solid fa-feather fa-fw", label: t("Fam.Short"), action: "rpbFam", onClick: () => openFamiliar(actor) });
     app.options.actions ??= {};
     app.options.actions.rpbFam ??= () => openFamiliar(actor);
     return;
   }
   if (actor?.documentName !== "Actor" || actor.type !== "character" || !(actor.isOwner || game.user.isGM)) return;
   if (controls.some(c => c.action === "rpbOpen")) return;
-  controls.unshift({ icon: "fa-solid fa-hammer", label: t("Sheet.Button"), action: "rpbOpen", onClick: () => openBuilder(actor) });
+  controls.unshift({ icon: "fa-solid fa-compass-drafting fa-fw", label: t("Sheet.Button"), action: "rpbOpen", onClick: () => openBuilder(actor) });
   app.options.actions ??= {};
   app.options.actions.rpbOpen ??= () => openBuilder(actor);
 }
@@ -140,7 +140,7 @@ async function onUpdateActor(actor, changed, options, userId) {
     content: `<div class="rpb-card-msg"><header><i class="fa-solid fa-angles-up"></i> ${t("Card.Title", { name: esc(actor.name), level: actor.level })}</header>
       <p>${t("Card.Body", { plan: esc(fresh.name) })}</p><ul>${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>
       <div class="btns"><button type="button" data-rpb="apply" data-actor="${actor.uuid}"><i class="fa-solid fa-wand-magic-sparkles"></i> ${t("Card.Apply")}</button>
-      <button type="button" data-rpb="open" data-actor="${actor.uuid}"><i class="fa-solid fa-hammer"></i> ${t("Card.Open")}</button></div></div>`,
+      <button type="button" data-rpb="open" data-actor="${actor.uuid}"><i class="fa-solid fa-compass-drafting"></i> ${t("Card.Open")}</button></div></div>`,
     flags: { [MID]: { levelUp: { actor: actor.uuid, level: actor.level } } }
   });
 }
@@ -174,7 +174,7 @@ function offerToNewPlayer() {
   if (game.user.isGM || game.user.character || !setting("promptNewPlayers", true) || !canCreateMore()) return;
   setTimeout(async () => {
     const ok = await foundry.applications.api.DialogV2.confirm({
-      window: { title: t("Welcome.Title"), icon: "fa-solid fa-hammer" },
+      window: { title: t("Welcome.Title"), icon: "fa-solid fa-compass-drafting" },
       content: `<p>${t("Welcome.Body")}</p>`,
       yes: { label: t("Welcome.Yes") }, no: { label: t("Welcome.Later") },
       rejectClose: false

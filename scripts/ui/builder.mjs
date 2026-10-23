@@ -47,7 +47,7 @@ function toSheetPlan(plan, actor) {
 export class BuilderApp extends foundry.applications.api.ApplicationV2 {
   static DEFAULT_OPTIONS = {
     classes: ["rpb-app"],
-    window: { resizable: true, icon: "fa-solid fa-hammer" },
+    window: { resizable: true, icon: "fa-solid fa-compass-drafting" },
     position: { width: 1200, height: 800 }
   };
 
@@ -978,7 +978,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       : s.level?.value !== undefined ? `${t("Detail.Level")} ${s.level.value}` : "";
     const content = `<div class="rpb-chat-card">
       <header><img src="${esc(doc.img)}" alt=""><div><h3>@UUID[${doc.uuid}]{${esc(doc.name)}}</h3><small>${esc([game.i18n.localize(CONFIG.Item?.typeLabels?.[doc.type] ?? doc.type), level].filter(Boolean).join(" · "))}${e?.original && !doc.name.includes(e.original) ? ` · ${esc(e.original)}` : ""}</small></div></header>
-      <p class="who"><i class="fa-solid fa-hammer"></i> ${esc(t("Detail.ToChatWho", { name: who }))}${slot ? ` — ${esc(slot)}` : ""}</p>
+      <p class="who"><i class="fa-solid fa-compass-drafting"></i> ${esc(t("Detail.ToChatWho", { name: who }))}${slot ? ` — ${esc(slot)}` : ""}</p>
       ${traits ? `<div class="tags">${traits}</div>` : ""}
       ${s.prerequisites?.value?.length ? `<p><b>${t("Detail.Prereq")}</b> ${esc(s.prerequisites.value.map(p => p.value ?? p).join("; "))}</p>` : ""}
       <div class="desc">${s.description?.value ?? ""}</div></div>`;
