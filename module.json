@@ -1,19 +1,45 @@
 {
   "id": "rutz-pf2e-builder",
   "title": "Rutz's PF2e Character Builder",
-  "description": "PF2e 캐릭터 빌더 — 선조·유산·배경·클래스·능력치·기술·피트를 단계별로 고르고, 1~20레벨을 미리 계획하고(캐릭터당 계획 5개), 다른 빌드와 비교하고, 레벨업할 때 계획을 한 번에 적용합니다. 플레이어당 1캐릭터 생성(GM 대행), 초상화 업로드. A guided character builder and level planner for PF2e: plans up to level 20, compare builds, apply on level-up.",
-  "version": "0.8.0",
-  "compatibility": { "minimum": "13", "verified": "14" },
-  "authors": [{ "name": "Rutz (rutz179)" }],
-  "relationships": { "systems": [{ "id": "pf2e", "type": "system" }] },
-  "esmodules": ["scripts/main.mjs"],
-  "styles": ["styles/builder.css"],
+  "description": "A guided character builder and level planner for Pathfinder 2e: build step by step, plan every level 1–20 (feats, skills, boosts, spells), compare builds and apply the plan on level-up. — PF2e 캐릭터 빌더·레벨 계획(영어/한국어).",
+  "version": "0.8.1",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Rutz (rutz179)"
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "pf2e",
+        "type": "system"
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/main.mjs"
+  ],
+  "styles": [
+    "styles/builder.css"
+  ],
   "languages": [
-    { "lang": "ko", "name": "한국어", "path": "lang/ko.json" },
-    { "lang": "en", "name": "English", "path": "lang/en.json" }
+    {
+      "lang": "ko",
+      "name": "한국어",
+      "path": "lang/ko.json"
+    },
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
   ],
   "socket": true,
   "url": "https://github.com/Rutz179/rutz-pf2e-builder",
   "manifest": "https://github.com/Rutz179/rutz-pf2e-builder/releases/latest/download/module.json",
-  "download": "https://github.com/Rutz179/rutz-pf2e-builder/releases/download/v0.7.8/module.zip"
+  "download": "https://github.com/Rutz179/rutz-pf2e-builder/releases/download/v0.7.9/module.zip"
 }
