@@ -309,6 +309,15 @@
 .rpb-casting { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 12px; }
 .rpb-casting label { display: flex; align-items: center; gap: 6px; color: var(--rpb-muted); }
 .rpb-casting select { height: 30px; }
+.rpb-homebrew { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 12px; padding: 6px 10px; border-radius: 6px; border: 1px dashed rgba(210, 169, 58, 0.45); font-size: 0.85rem; }
+.rpb-homebrew.on { border-style: solid; background: rgba(210, 169, 58, 0.08); }
+.rpb-homebrew p { flex: 1 1 320px; margin: 0; color: var(--rpb-muted); }
+.rpb-homebrew.on p { color: inherit; }
+.rpb-homebrew button { flex: 0 0 auto; width: auto; }
+.rpb-hb-form .form-group { margin: 6px 0; }
+.rpb-hb-form .form-fields input[type=number] { width: 64px; flex: 0 0 64px; }
+.rpb-hb-form .rpb-hb-book.off { display: none; }
+.rpb-hb-form .hint { font-size: 0.8rem; opacity: 0.8; margin: 2px 0 0; }
 .rpb-casting button, .rpb-spelltable button { width: auto; height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--rpb-line-2); background: #120f0a; color: var(--rpb-text); cursor: pointer; }
 .rpb-spelltable { width: 100%; border-collapse: collapse; }
 .rpb-spelltable th { text-align: left; white-space: nowrap; padding: 3px 10px 3px 0; font-size: 0.85rem; vertical-align: top; }
@@ -458,3 +467,8 @@
 
 /* 0.7.5 — compare-only plans say so */
 .rpb-hint.warn { color: #ff8a7a; }
+
+/* Gradual Ability Boosts */
+.rpb-boostrow button.taken { opacity: 0.45; }
+.rpb-boostrow button.taken em small { font-size: 0.7rem; font-style: normal; white-space: nowrap; }
+.rpb-boosts tr.gab .b small { font-size: 0.72rem; font-weight: 600; }

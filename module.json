@@ -2,14 +2,15 @@
   "id": "rutz-pf2e-builder",
   "title": "Rutz's PF2e Character Builder",
   "description": "A guided character builder and level planner for Pathfinder 2e: build step by step, plan every level 1–20 (feats, skills, boosts, spells), compare builds and apply the plan on level-up. — PF2e 캐릭터 빌더·레벨 계획(영어/한국어).",
-  "version": "0.8.2",
+  "version": "0.8.1",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
   },
   "authors": [
     {
-      "name": "Rutz (rutz179)"
+      "name": "Rutz (rutz179)",
+      "url": "https://www.patreon.com/Rutz179"
     }
   ],
   "relationships": {
@@ -41,5 +42,8 @@
   "socket": true,
   "url": "https://github.com/Rutz179/rutz-pf2e-builder",
   "manifest": "https://github.com/Rutz179/rutz-pf2e-builder/releases/latest/download/module.json",
-  "download": "https://github.com/Rutz179/rutz-pf2e-builder/releases/download/v0.8.2/module.zip"
+  "download": "https://github.com/Rutz179/rutz-pf2e-builder/releases/download/v0.8.1/module.zip",
+  "bugs": "https://github.com/Rutz179/rutz-pf2e-builder/issues",
+  "readme": "https://github.com/Rutz179/rutz-pf2e-builder#readme",
+  "changelog": "https://github.com/Rutz179/rutz-pf2e-builder/releases"
 }

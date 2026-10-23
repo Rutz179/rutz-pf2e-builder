@@ -1,5 +1,6 @@
-import { attrLabel, t } from "./util.mjs";
+import { ATTRS, MID, attrLabel, setting, t } from "./util.mjs";
 import { entryOf } from "./rules.mjs";
+import { cachedIndex } from "./data.mjs";
 
 /* ======================================================================== *
  * Spells in a plan: how the character casts (tradition, prepared or
@@ -26,9 +27,11 @@ export function kindLabel(kind) {
 }
 
 /** How a class casts, by its slug: { tradition (null = from a subclass), mode, attr } or null. */
-export function castingForClass(slug) {
+export function castingForClass(slug, flag = null) {
   const d = CASTERS[slug];
-  return d ? { tradition: d[0], mode: d[1], attr: d[2], slug } : null;
+  if (d) return { tradition: d[0], mode: d[1], attr: d[2], slug };
+  const h = homebrew(slug, flag);
+  return h ? { tradition: h.tradition, mode: h.mode, attr: h.attr, slug } : null;
 }
 
 /** "마녀(Witch)" → "마녀" in Korean, the name as it is otherwise. */
@@ -44,8 +47,8 @@ export function entryName(className, tradition) {
 
 export function casterDefaults(plan, idx) {
   const cls = entryOf(idx, plan.class);
-  const d = CASTERS[cls?.slug];
-  return d ? { tradition: d[0], mode: d[1], attr: d[2] } : null;
+  const c = cls?.slug ? castingForClass(cls.slug, cls.casting) : null;
+  return c ? { tradition: c.tradition, mode: c.mode, attr: c.attr } : null;
 }
 
 export function maxSpellRank(level) {
@@ -109,11 +112,11 @@ const EXTRA = {
 };
 
 export function hasTable(slug) {
-  return !!CLASS_TABLE[slug];
+  return !!(CLASS_TABLE[slug] || homebrew(slug)?.table);
 }
 
 export function spellSlotsAt(slug, level) {
-  const tb = TABLE[CLASS_TABLE[slug]];
+  const tb = TABLE[CLASS_TABLE[slug] ?? homebrew(slug)?.table];
   if (!tb || level < 1) return null;
   const ranks = [];
   for (let r = 1; r <= 9; r++) ranks.push(tb.slot(r, level));
@@ -123,9 +126,13 @@ export function spellSlotsAt(slug, level) {
   return { cantrips, ranks, extra: EXTRA[slug] ?? null };
 }
 
+function learnOf(slug) {
+  return LEARN[slug] ?? homebrew(slug)?.learn ?? null;
+}
+
 /** Known spells the class has chosen by a level, per rank (index 0 = cantrips). */
 function knownTotals(slug, level) {
-  const l = LEARN[slug];
+  const l = learnOf(slug);
   const s = spellSlotsAt(slug, level);
   if (!l || !s || l.mode !== "rep") return null;
   const out = [Math.max(0, s.cantrips - (l.grantedCantrips ?? 0))];
@@ -136,7 +143,7 @@ function knownTotals(slug, level) {
 
 /** What to add on reaching a level. byRank[0] = cantrips. */
 export function learnAt(slug, level) {
-  const l = LEARN[slug];
+  const l = learnOf(slug);
   if (!l) return null;
   if (l.mode === "list") return { mode: "list", cantrips: 0, byRank: {}, any: 0, note: l.note ?? null };
   if (l.mode === "book") {
@@ -183,4 +190,87 @@ export function learnText(l) {
   for (const [r, n] of Object.entries(l.byRank)) parts.push(t("Spells.Learn.Rank", { rank: r, n }));
   if (l.any) parts.push(t("Spells.Learn.Any", { n: l.any }));
   return parts.join(" · ") || t("Spells.Learn.Nothing");
+}
+
+/* ======================================================================== *
+ * Homebrew spellcasting classes. The tables above know the printed classes
+ * by slug; a homebrew class gets one from
+ *  - the GM, in the builder's spells step (world setting "homebrewCasting",
+ *    by class slug — works for classes in locked module packs too), or
+ *  - its own item: flags["rutz-pf2e-builder"].casting, for homebrew authors:
+ *      { "like": "wizard" }                       a printed class's way, or
+ *      { "tradition": "arcane" | null, "mode": "prepared" | "spontaneous",
+ *        "attr": "int", "slots": "full" | "spont" | "wave" | "psychic" | "necro" | "animist",
+ *        "learn": "book" | "rep" | "list", "cantrips": 10, "first": 5, "per": 2 }
+ *    ("like" can be combined with any of the others to change just those).
+ * The GM's setting wins over the item's flag; the printed classes can't be changed.
+ * ======================================================================== */
+
+export const SLOT_TABLES = Object.keys(TABLE);
+export const PRINTED_CASTERS = Object.keys(CASTERS);
+const MODES = ["prepared", "spontaneous"];
+const LEARN_MODES = ["book", "rep", "list"];
+const flagSeen = new Map();
+let memo = { key: null, idx: null, map: new Map() };
+
+/** The world's own settings for homebrew casters: { [slug]: config }. */
+export function homebrewSettings() {
+  const v = setting("homebrewCasting", null);
+  return v && typeof v === "object" ? v : {};
+}
+
+/** A printed class's way of casting, as a config (for "like" and the GM's form). */
+export function printedConfig(slug) {
+  const d = CASTERS[slug];
+  if (!d) return null;
+  const l = LEARN[slug] ?? { mode: "list" };
+  return { tradition: d[0], mode: d[1], attr: d[2], slots: CLASS_TABLE[slug], learn: l.mode,
+    cantrips: l.cantrips ?? 10, first: l.first ?? 5, per: l.per ?? 2 };
+}
+
+const num = (v, lo, hi, fb) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : fb; };
+
+/** A config (setting or flag) made whole: { tradition, mode, attr, table, learn: {mode, cantrips, first, per, granted?} } or null. */
+export function resolveCasting(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const like = raw.like ? printedConfig(String(raw.like).toLowerCase()) : null;
+  const base = { ...(like ?? {}), ...Object.fromEntries(Object.entries(raw).filter(([k, v]) => k !== "like" && v !== undefined && v !== "")) };
+  const mode = MODES.includes(base.mode) ? base.mode : "prepared";
+  const tradition = TRADITIONS.includes(base.tradition) ? base.tradition : null;
+  const attr = ATTRS.includes(base.attr) ? base.attr : (mode === "spontaneous" ? "cha" : "int");
+  const table = SLOT_TABLES.includes(base.slots) ? base.slots : (mode === "spontaneous" ? "spont" : "full");
+  const lm = LEARN_MODES.includes(base.learn) ? base.learn : (mode === "spontaneous" ? "rep" : "book");
+  const learn = { mode: lm };
+  if (lm === "book") Object.assign(learn, { cantrips: num(base.cantrips, 0, 20, 10), first: num(base.first, 0, 20, 5), per: num(base.per, 0, 10, 2) });
+  if (lm === "rep" && like && raw.like === "sorcerer") Object.assign(learn, { granted: 1, grantedCantrips: 1 });
+  return { tradition, mode, attr, table, learn };
+}
+
+/** The homebrew config of a class slug (null for printed classes and classes without one). */
+export function homebrew(slug, flag = null) {
+  if (!slug || CASTERS[slug]) return null;
+  if (flag && JSON.stringify(flag) !== JSON.stringify(flagSeen.get(slug))) { flagSeen.set(slug, flag); memo.key = null; }
+  const set = homebrewSettings();
+  const idx = cachedIndex();
+  const key = JSON.stringify(set);
+  if (memo.key !== key || memo.idx !== idx) memo = { key, idx, map: new Map() };
+  if (memo.map.has(slug)) return memo.map.get(slug);
+  const raw = set[slug] ?? flagSeen.get(slug) ?? idx?.class?.find(e => e.slug === slug && e.casting)?.casting ?? null;
+  const out = resolveCasting(raw);
+  memo.map.set(slug, out);
+  return out;
+}
+
+/** Where a homebrew class's casting comes from: "setting", "flag" or null. */
+export function homebrewSource(slug, flag = null) {
+  if (!slug || CASTERS[slug]) return null;
+  if (homebrewSettings()[slug]) return "setting";
+  return homebrew(slug, flag) ? "flag" : null;
+}
+
+export async function saveHomebrew(slug, conf) {
+  const all = { ...homebrewSettings() };
+  if (conf) all[slug] = conf; else delete all[slug];
+  memo = { key: null, idx: null, map: new Map() };
+  await game.settings.set(MID, "homebrewCasting", all);
 }

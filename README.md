@@ -14,9 +14,10 @@ A guided character creator and level-by-level build planner for **Pathfinder 2e*
 - **Compare** — the current sheet and your plans side by side at any level, calculated by PF2e itself.
 - **Level-up** — when a character gains a level, its owner gets a chat card that applies the plan in one click. Applying only adds; nothing already on the sheet is replaced.
 - **Familiar Builder** — familiar and master abilities with their prerequisites, and the daily ability count PF2e allows.
+- **Homebrew & other modules** — homebrew in compendiums or the world's Items tab is listed with the official options; homebrew spellcasting classes get a spell table; Free Archetype and Gradual Ability Boosts supported. No other module needed. [More](https://github.com/Rutz179/rutz-pf2e-builder/wiki/Homebrew-and-Other-Modules)
 - **For GMs** — characters per player, starting level, visible rarities, legacy content, which compendiums are read, and more.
 
-<img src="media/EN_06.png" alt="Summary of a character with its main plan, level preview and the New plan dialog" height="340"> <img src="media/EN_07.png" alt="Comparing the current sheet with two plans" height="340">
+<img src="media/EN_06.png" alt="Summary of a character with its main plan, level preview and the New plan dialog" height="320"> <img src="media/EN_07.png" alt="Comparing the current sheet with two plans" height="320">
 
 ## Install
 Foundry → *Add-on Modules* → *Install Module* → Manifest URL:

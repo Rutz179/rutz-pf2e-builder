@@ -249,7 +249,7 @@ export function syncActorClassSpells(actor) {
 
 async function syncNow(actor) {
   if (actor?.type !== "character" || !actor.class) return [];
-  const c = castingForClass(actor.class.slug ?? actor.class.system?.slug);
+  const c = castingForClass(actor.class.slug ?? actor.class.system?.slug, actor.class.flags?.[MID]?.casting ?? null);
   if (!c) return [];
   const main = actor.itemTypes.spellcastingEntry?.find(e => e.system?.prepared?.value === c.mode);
   if (!c.tradition) c.tradition = main?.system?.tradition?.value ?? null;

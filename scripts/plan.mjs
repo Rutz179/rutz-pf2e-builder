@@ -185,6 +185,18 @@ export function refreshSheetPlan(plan, actor) {
   const keepInc = Object.fromEntries(Object.entries(plan.skills.increases).filter(([lv]) => keep(lv)));
   const keepExtra = Object.fromEntries(Object.entries(plan.skills.extra ?? {}).filter(([lv]) => keep(lv)));
   const keepBoosts = Object.fromEntries(Object.entries(plan.boosts.levels).filter(([lv]) => keep(lv)));
+  // Gradual boosts: a group the sheet is partway through keeps the sheet's first picks, then the plan's.
+  if (!plan.unlocked && game.pf2e?.settings?.variants?.gab) {
+    for (const [g, list] of Object.entries(keepBoosts)) {
+      const n = 4 - Math.max(0, Math.min(4, Number(g) - level));
+      if (n <= 0 || n >= 4 || !Array.isArray(list)) continue;
+      const head = (fresh.boosts.levels[g] ?? []).slice(0, n);
+      while (head.length < n) head.push(null);
+      const merged = [...head, ...list.slice(n).map(a => (head.includes(a) ? null : a))];
+      while (merged.length && !ATTRS.includes(merged[merged.length - 1])) merged.pop();
+      keepBoosts[g] = merged;
+    }
+  }
   return normalizePlan({
     ...plan,
     ancestry: fresh.ancestry, heritage: fresh.heritage, background: fresh.background, class: fresh.class, deity: fresh.deity,

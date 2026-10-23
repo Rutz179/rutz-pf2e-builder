@@ -12,6 +12,57 @@ import { picksOf } from "./plan.mjs";
  * ======================================================================== */
 
 export const BOOST_LEVELS = [1, 5, 10, 15, 20];
+
+/* Attribute boosts come in groups stored under 1 / 5 / 10 / 15 / 20 (as PF2e
+ * keeps them). With the Gradual Ability Boosts variant, each group's four are
+ * taken one a level (2–5, 7–10, 12–15, 17–20) and PF2e uses the first N of the
+ * group's list, so a plan keeps them in order: index i = level (group − 3 + i). */
+
+export function gradualBoosts() {
+  return !!game.pf2e?.settings?.variants?.gab;
+}
+
+/** How many boosts of a group a character of `level` has (PF2e's own rule). */
+export function allowedBoosts(group, level) {
+  group = Number(group);
+  if (group === 1) return level >= 0 ? 4 : 0;
+  if (gradualBoosts()) return 4 - Math.max(0, Math.min(4, group - level));
+  return level >= group ? 4 : 0;
+}
+
+/** The group a level's boost goes into (null: no boost at that level). */
+export function boostGroupAt(level) {
+  if (level <= 1) return 1;
+  if (!gradualBoosts()) return BOOST_LEVELS.includes(level) ? level : null;
+  const g = Math.ceil(level / 5) * 5;
+  return g - level <= 3 ? g : null;
+}
+
+/** Gradual: the place of a level's boost in its group (0–3). */
+export function boostIndexAt(level) {
+  const g = boostGroupAt(level);
+  return g && g > 1 ? 3 - (g - level) : null;
+}
+
+/** A group's planned boosts (gradual plans may have gaps: null). */
+export function boostList(plan, group) {
+  const list = plan?.boosts?.levels?.[group];
+  return Array.isArray(list) ? list : [];
+}
+
+/** Planned boosts of a group a character of `level` has, in order. */
+export function boostsOfGroup(plan, group, level) {
+  const n = allowedBoosts(group, level);
+  return n ? boostList(plan, group).slice(0, n).filter(a => ATTRS.includes(a)) : [];
+}
+
+/** Is the boost (or the four) of this level chosen? */
+export function boostDone(plan, level) {
+  const g = boostGroupAt(level);
+  if (!g) return true;
+  if (g === 1 || !gradualBoosts()) return boostList(plan, g).filter(a => ATTRS.includes(a)).length >= 4;
+  return ATTRS.includes(boostList(plan, g)[boostIndexAt(level)]);
+}
 const DEFAULTS = {
   ancestry: [1, 5, 9, 13, 17],
   class: [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
@@ -39,7 +90,7 @@ export function progression(classEntry) {
     general: lv("general"),
     skillIncrease: lv("skillIncrease"),
     archetype: fa ? [2, 4, 6, 8, 10, 12, 14, 16, 18, 20] : [],
-    boosts: [5, 10, 15, 20]
+    boosts: gradualBoosts() ? [2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 20] : [5, 10, 15, 20]
   };
 }
 
@@ -95,7 +146,7 @@ export function attributes(plan, level, idx) {
   const cls = entryOf(idx, plan.class);
   const key = keyAttribute(plan, cls);
   add(key, 1);
-  for (const lv of BOOST_LEVELS) if (lv <= level) for (const a of plan.boosts.levels[lv] ?? []) add(a, lv);
+  for (const g of BOOST_LEVELS) for (const a of boostsOfGroup(plan, g, level)) add(a, g);
   return { mods, partial, key };
 }
 
@@ -104,9 +155,13 @@ export function keyAttribute(plan, cls) {
   return opts.length === 1 ? opts[0] : (opts.includes(plan.boosts.classKey) ? plan.boosts.classKey : null);
 }
 
+/** The boosts to write on a sheet of `level` (system.build.attributes.boosts). */
 export function boostsUpTo(plan, level) {
   const out = {};
-  for (const lv of BOOST_LEVELS) if (lv <= level && plan.boosts.levels[lv]?.length) out[lv] = [...plan.boosts.levels[lv]];
+  for (const g of BOOST_LEVELS) {
+    const list = boostsOfGroup(plan, g, level);
+    if (list.length) out[g] = list;
+  }
   return out;
 }
 
@@ -135,7 +190,8 @@ export function levelOneSkills(plan, idx) {
 /** At these levels a raised Intelligence gives one more trained skill (remaster). */
 export function intBonusLevels(plan, idx) {
   const out = [];
-  for (const lv of [5, 10, 15, 20]) {
+  for (let lv = 2; lv <= MAX_LEVEL; lv++) {
+    if (!(boostGroupAt(lv) > 1)) continue;
     const before = attributes(plan, lv - 1, idx).mods.int;
     const after = attributes(plan, lv, idx).mods.int;
     if (after > before) out.push(lv);
@@ -344,7 +400,7 @@ export function openItems(plan, upTo, idx) {
   const cls = entryOf(idx, plan.class);
   if (!cls) {
     if (plan.base !== "sheet") {
-      if ((plan.boosts.levels[1] ?? []).length < 4) out.push({ step: "attributes", level: 1, key: "boosts" });
+      if (!boostDone(plan, 1)) out.push({ step: "attributes", level: 1, key: "boosts" });
       if (!(plan.skills.trained ?? []).length) out.push({ step: "skills", level: 1, key: "skills" });
     }
     return out;
@@ -353,14 +409,14 @@ export function openItems(plan, upTo, idx) {
   const from = plan.base === "sheet" && plan.sheet ? plan.sheet.level + 1 : 1;
   if (from <= 1) {
     if (!keyAttribute(plan, cls)) out.push({ step: "attributes", level: 1, key: "classKey" });
-    if ((plan.boosts.levels[1] ?? []).length < 4) out.push({ step: "attributes", level: 1, key: "boosts" });
+    if (!boostDone(plan, 1)) out.push({ step: "attributes", level: 1, key: "boosts" });
     const one = levelOneSkills(plan, idx);
     if ((plan.skills.trained ?? []).length < one.free) out.push({ step: "skills", level: 1, key: "skills" });
   }
   for (let lv = Math.max(from, 1); lv <= Math.min(upTo, MAX_LEVEL); lv++) {
     for (const s of slotsAt(prog, lv)) if (!plan.feats[s.id]) out.push({ step: `level-${lv}`, level: lv, key: s.id });
     if (lv > 1 && prog.skillIncrease.includes(lv) && !plan.skills.increases[lv]) out.push({ step: `level-${lv}`, level: lv, key: "increase" });
-    if (prog.boosts.includes(lv) && (plan.boosts.levels[lv] ?? []).length < 4) out.push({ step: `level-${lv}`, level: lv, key: "boosts" });
+    if (prog.boosts.includes(lv) && !boostDone(plan, lv)) out.push({ step: `level-${lv}`, level: lv, key: "boosts" });
   }
   return out;
 }

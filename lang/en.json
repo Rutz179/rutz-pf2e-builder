@@ -119,7 +119,10 @@
       "AltToggle": "Alternate ancestry boosts: 2 free boosts instead of the fixed boosts and flaw",
       "FourFree": "free {n}/4",
       "Result": "Result at level {level}",
-      "Partial": "Partial boost (one more makes +1)"
+      "Partial": "Partial boost (one more makes +1)",
+      "Gradual": "gradual {n}/4",
+      "GradualCell": "Pick on the level {level} page",
+      "HintGradual": "Choose the boosts from your ancestry, background and class, plus 4 free boosts at level 1. Gradual Ability Boosts is on: instead of 4 boosts at levels 5, 10, 15 and 20, you get one at each of levels 2–5, 7–10, 12–15 and 17–20 (a different attribute each time within those four) — pick them on each level's page; the numbers below show which level boosted what. At +4 or higher a boost is partial (two make +1)."
     },
     "Skills": {
       "Title": "Skills (level 1)",
@@ -145,7 +148,10 @@
       "BoostHint": "Four different attributes. At +4 or higher a boost is partial (½); the second partial boost gives +1.",
       "Nothing": "Nothing to choose at this level.",
       "RaiseApply": "Raise to level {level} and apply the plan",
-      "DetailHint": "Click a feat or feature to read it here."
+      "DetailHint": "Click a feat or feature to read it here.",
+      "BoostGradual": "Attribute boost — gradual ({n}/1)",
+      "BoostTakenAt": "Already boosted at level {level} (same group of four levels)",
+      "BoostGradualHint": "Gradual Ability Boosts: one boost at each of levels {from}–{to}, a different attribute each time. At +4 or higher a boost is partial (½); the second partial boost gives +1."
     },
     "Group": {
       "ancestry": "Ancestry feat",
@@ -336,7 +342,7 @@
       "HideLegacyHint": "Hides legacy entries in every user's builder in this world. Off by default (legacy included); when on, the per-window 'Include legacy' toggle is disabled. Existing plans are kept.",
       "PacksMenu": "Compendiums the builder reads",
       "PacksMenuLabel": "Choose compendiums",
-      "PacksMenuHint": "Choose which packs ancestries, classes and feats are read from. By default, companion modules' animal and eidolon packs (Companion Compendia, etc.), packs disabled in the compendium browser, and system packs replaced by a translation module are left out.",
+      "PacksMenuHint": "Choose which packs ancestries, classes and feats are read from, and whether homebrew in the world's Items tab is read too. By default, companion modules' animal and eidolon packs (Companion Compendia, etc.), packs disabled in the compendium browser, and system packs replaced by a translation module are left out.",
       "TidyChoices": "Tidy PF2e choice windows",
       "TidyChoicesHint": "In the 'choose one' windows PF2e opens when adding a class or feat (bard muse, cleric doctrine …), leave out packs disabled in the compendium browser and system packs replaced by a translation, and list each option only once. Answers picked in the builder are applied without a window regardless of this setting.",
       "LevelCantrips": "Allow cantrips as level-up spells",
@@ -451,7 +457,12 @@
       "WhyCompanion": "companion module — excluded automatically",
       "WhyBrowser": "disabled in the compendium browser",
       "WhyMirror": "replaced by a translation module",
-      "WhySystem": "system pack off (translation pack used)"
+      "WhySystem": "system pack off (translation pack used)",
+      "World": "This world's Items tab",
+      "WorldHint": "Homebrew ancestries, heritages, backgrounds, classes, deities, feats and spells made right in the Items sidebar (not in a compendium). {n} here now.",
+      "World_all": "Read them all",
+      "World_visible": "Players see only the ones they have permission for (Limited or better)",
+      "World_off": "Don't read them"
     },
     "Choice": {
       "Pick": "Choose…",
@@ -523,6 +534,41 @@
         "Object": "Object familiar only",
         "Undead": "Undead familiar only"
       }
+    },
+    "Homebrew": {
+      "Setup": "Set up this class's spellcasting",
+      "Edit": "Change",
+      "NoTable": "If this class casts spells: the builder has no spell table for it (homebrew or from another module), so spells per day and how many to learn aren't counted. You can still pick a tradition above and add spells — or ask the GM to set it up.",
+      "NoTableGm": "If this class casts spells: the builder has no spell table for it (homebrew or from another module). Set it up once and every character of this class in this world gets spells per day and spells to learn.",
+      "FromGm": "Homebrew spellcasting (set by the GM):",
+      "FromItem": "Homebrew spellcasting (from the class item):",
+      "Title": "Spellcasting — {name}",
+      "FormHint": "How <b>{name}</b> casts. Start from a printed class that works the same way, then change what differs.",
+      "Like": "Works like",
+      "LikeNone": "— set by hand —",
+      "LikeHint": "Fills in the fields below from that class.",
+      "FromSubclass": "From a subclass (bloodline, patron …)",
+      "Slots": "Spells per day",
+      "Slots_full": "3 per rank (wizard, cleric, druid, bard, witch)",
+      "Slots_spont": "4 per rank (sorcerer, oracle)",
+      "Slots_psychic": "Psychic's table",
+      "Slots_wave": "2 per rank (magus, summoner)",
+      "Slots_necro": "Necromancer's table",
+      "Slots_animist": "Animist's table",
+      "Learn": "Learning spells",
+      "Learn_book": "Spellbook — a start at level 1, then some each level",
+      "Learn_rep": "Repertoire — one spell known per slot",
+      "Learn_list": "Prepares from the whole list (nothing to learn)",
+      "Book": "Spellbook",
+      "First": "1st-rank spells at level 1",
+      "Per": "Spells added each level",
+      "BookHint": "Cantrips · 1st-rank spells at level 1 · spells added each level after that (a wizard: 10 · 5 · 2).",
+      "WorldNote": "Saved in this world for the class slug <code>{slug}</code>. Homebrew authors can ship this in the class item instead — see the wiki (flags.rutz-pf2e-builder.casting).",
+      "Save": "Save",
+      "Remove": "Remove",
+      "Cancel": "Cancel",
+      "Saved": "Spellcasting saved for {name}.",
+      "Removed": "Spellcasting for {name} removed."
     }
   }
 }

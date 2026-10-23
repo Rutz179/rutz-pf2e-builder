@@ -1,6 +1,6 @@
 import { MID, esc, setting, t } from "./util.mjs";
 import { installCalmTooltips } from "./tips.mjs";
-import { loadIndex, invalidateIndex } from "./data.mjs";
+import { loadIndex, invalidateIndex, worldItemChanged } from "./data.mjs";
 import { activePlanId, plansOf, refreshSheetPlan } from "./plan.mjs";
 import { pendingUpTo } from "./apply.mjs";
 import { canCreateMore, initSocket } from "./create.mjs";
@@ -43,6 +43,9 @@ function registerSettings() {
   s("imageFolder", { name: t("Settings.ImageFolder"), hint: t("Settings.ImageFolderHint"), type: String, default: "" });
   game.settings.registerMenu(MID, "packMenu", { name: t("Settings.PacksMenu"), label: t("Settings.PacksMenuLabel"), hint: t("Settings.PacksMenuHint"), icon: "fa-solid fa-book-atlas", type: PackChooser, restricted: true });
   game.settings.register(MID, "packRules", { scope: "world", config: false, type: Object, default: { include: [], exclude: [] } });
+  game.settings.register(MID, "homebrewCasting", { scope: "world", config: false, type: Object, default: {}, onChange: () => refreshBuilders() });
+  game.settings.register(MID, "worldItems", { scope: "world", config: false, type: String, default: "all",
+    onChange: () => { invalidateIndex(); refreshBuilders(); } });
   s("levelCantrips", { name: t("Settings.LevelCantrips"), hint: t("Settings.LevelCantripsHint"), type: Boolean, default: true });
   s("autoClassSpells", { name: t("Settings.AutoClassSpells"), hint: t("Settings.AutoClassSpellsHint"), type: Boolean, default: true });
   s("tidyChoices", { name: t("Settings.TidyChoices"), hint: t("Settings.TidyChoicesHint"), type: Boolean, default: true });
@@ -200,6 +203,16 @@ Hooks.once("ready", () => {
   Hooks.on("preUpdateActor", onPreUpdateActor);
   Hooks.on("updateActor", onUpdateActor);
   Hooks.on("renderChatMessageHTML", wireCards);
+  // Homebrew made or edited in the world's Items tab: the lists read it again (once per burst of edits).
+  let relist = null;
+  const worldEdit = item => {
+    if (!worldItemChanged(item)) return;
+    clearTimeout(relist);
+    relist = setTimeout(refreshBuilders, 600);
+  };
+  Hooks.on("createItem", worldEdit);
+  Hooks.on("updateItem", worldEdit);
+  Hooks.on("deleteItem", worldEdit);
   // Feats and class features gained on the sheet: their spells too (once per burst of new items).
   const soon = new Map();
   Hooks.on("createItem", (item, _options, userId) => {

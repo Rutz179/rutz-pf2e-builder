@@ -1,5 +1,5 @@
 import { MID, esc, t } from "../util.mjs";
-import { autoPackState, autoSpellState, invalidateIndex, isSpellPack, packRules } from "../data.mjs";
+import { autoPackState, autoSpellState, invalidateIndex, isSpellPack, packRules, worldItemsMode } from "../data.mjs";
 import { forgetQueryIndex } from "../choices.mjs";
 import { refreshBuilders } from "./builder.mjs";
 
@@ -9,6 +9,7 @@ import { refreshBuilders } from "./builder.mjs";
  * companion modules (Companion Compendia …), packs switched off in PF2e's
  * compendium browser and system packs a translation mirrors. The GM can tick
  * or untick any of them; only the differences from that default are saved.
+ * On top: whether homebrew in the world's Items tab is read too.
  * ======================================================================== */
 
 const WHY = { name: "WhyName", companion: "WhyCompanion", browser: "WhyBrowser", mirror: "WhyMirror", system: "WhySystem" };
@@ -48,8 +49,17 @@ export class PackChooser extends foundry.applications.api.ApplicationV2 {
         <code>${esc(pack.collection)}</code>
         ${auto.why && auto.why !== "type" ? `<span class="why">${esc(t(`Packs.${WHY[auto.why] ?? "WhyName"}`))}</span>` : ""}
       </label>`).join("")}</fieldset>`).join("");
+    const mode = worldItemsMode();
+    const count = game.items?.filter(i => ["ancestry", "heritage", "background", "class", "feat", "deity", "spell"].includes(i.type)).length ?? 0;
+    const world = `<fieldset class="rpb-world"><legend>${esc(t("Packs.World"))}</legend>
+      <p class="hint">${esc(t("Packs.WorldHint", { n: count }))}</p>
+      ${["all", "visible", "off"].map(v => `<label class="rpb-pack" data-world="${v}">
+        <input type="radio" name="__worldItems" value="${v}" ${mode === v ? "checked" : ""}>
+        <span class="nm">${esc(t(`Packs.World_${v}`))}</span></label>`).join("")}
+    </fieldset>`;
     return `<div class="rpb-packs-body">
       <p class="hint">${t("Packs.Hint")}</p>
+      ${world}
       ${body}
     </div>
     <footer class="form-footer">
@@ -62,6 +72,8 @@ export class PackChooser extends foundry.applications.api.ApplicationV2 {
     content.innerHTML = result;
     content.querySelector("[data-action=reset]")?.addEventListener("click", () => {
       for (const box of content.querySelectorAll("input[type=checkbox]")) box.checked = box.dataset.auto === "1";
+      const all = content.querySelector("input[name=__worldItems][value=all]");
+      if (all) all.checked = true;
     });
   }
 
@@ -73,6 +85,8 @@ export class PackChooser extends foundry.applications.api.ApplicationV2 {
       if (box.checked && !auto) include.push(box.name);
       if (!box.checked && auto) exclude.push(box.name);
     }
+    const world = form.querySelector("input[name=__worldItems]:checked")?.value ?? "all";
+    if (world !== game.settings.get(MID, "worldItems")) await game.settings.set(MID, "worldItems", world);
     await game.settings.set(MID, "packRules", { include, exclude });
     invalidateIndex();
     forgetQueryIndex();

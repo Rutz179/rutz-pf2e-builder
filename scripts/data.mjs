@@ -8,7 +8,10 @@ import { deityAlignment } from "./deity-alignment.mjs";
  *
  * Nothing is hard-coded: system packs, the Starfinder/anachronism packs and
  * homebrew packs all work, and the translation module's names come through
- * because the index and documents are read the normal way.
+ * because the index and documents are read the normal way. Homebrew made
+ * right in the world's Items tab is read too (setting "worldItems", in the
+ * compendium chooser): all of it, only what players may see (Limited or
+ * better; the GM always sees all), or none.
  * ======================================================================== */
 
 const TYPES = new Set(["ancestry", "heritage", "background", "class", "feat", "deity"]);
@@ -19,7 +22,7 @@ const FIELDS = [
   "system.keyAbility.value", "system.boosts", "system.flaws", "system.trainedSkills", "system.onlyLevel1",
   "system.items", "system.ancestryFeatLevels", "system.classFeatLevels", "system.skillFeatLevels",
   "system.generalFeatLevels", "system.skillIncreaseLevels", "system.perception", "system.savingThrows",
-  "system.alignment", "flags.rutz-pf2e-builder.alignment", "_stats.compendiumSource"
+  "system.alignment", "flags.rutz-pf2e-builder.alignment", "flags.rutz-pf2e-builder.casting", "_stats.compendiumSource"
 ];
 // Packs worth indexing when no explicit list is set: their names say what they hold.
 const AUTO_PACK = /(feat|ancestr|heritage|background|class|archetype|deit)/i;
@@ -160,9 +163,43 @@ function normalize(e, pack) {
     } : null,
     perception: s.perception ?? null,
     saves: s.savingThrows ?? null,
+    casting: e.type === "class" ? (e.flags?.[MID]?.casting ?? null) : null,
     pack: pack.collection,
     search: `${e.name} ${original}`.toLowerCase()
   };
+}
+
+/* ---------------- the world's own Items tab (homebrew made in the world) ---------------- */
+
+export const WORLD = "world-items";
+const WORLD_PACK = { collection: WORLD };
+
+/** "all" · "visible" (players: only items they may see) · "off". */
+export function worldItemsMode() {
+  const v = setting("worldItems", "all");
+  return ["all", "visible", "off"].includes(v) ? v : "all";
+}
+
+/** Items in the world's Items tab (not inside an actor) of these types, as the setting allows. */
+function worldItems(types) {
+  const mode = worldItemsMode();
+  if (mode === "off") return [];
+  const out = [];
+  for (const item of game.items ?? []) {
+    if (!types.has(item.type)) continue;
+    if (mode === "visible" && !game.user.isGM && !item.testUserPermission?.(game.user, "LIMITED")) continue;
+    out.push({ ...item.toObject(), uuid: item.uuid });
+  }
+  return out;
+}
+
+/** A world item the lists show changed: read the lists again next time (and drop its cached document). */
+export function worldItemChanged(item) {
+  if (item?.parent || !(TYPES.has(item?.type) || item?.type === "spell")) return false;
+  docs.delete(item.uuid);
+  if (worldItemsMode() === "off") return false;
+  invalidateIndex();
+  return true;
 }
 
 /** Everything, by type. First call reads the packs (a second or two); later calls are instant. */
@@ -182,6 +219,13 @@ export async function loadIndex({ force = false } = {}) {
         seen.add(n.uuid);
         out[n.type].push(n);
       }
+    }
+    for (const e of worldItems(TYPES)) {
+      if (companionEntry(e)) continue;
+      const n = normalize(e, WORLD_PACK);
+      if (seen.has(n.uuid)) continue;
+      seen.add(n.uuid);
+      out[n.type].push(n);
     }
     const lang = game.i18n.lang;
     for (const list of Object.values(out)) list.sort((a, b) => a.name.localeCompare(b.name, lang));
@@ -235,9 +279,12 @@ export async function loadSpells() {
   if (idx.spell) return idx.spell;
   spellLoading ??= (async () => {
     const out = [];
-    for (const pack of spellPackList()) {
-      let list;
-      try { list = await pack.getIndex({ fields: SPELL_FIELDS }); } catch (_) { continue; }
+    const sources = spellPackList().map(pack => ({ pack, list: null }));
+    sources.push({ pack: WORLD_PACK, list: worldItems(new Set(["spell"])) });
+    for (const src of sources) {
+      const pack = src.pack;
+      let list = src.list;
+      if (!list) { try { list = await pack.getIndex({ fields: SPELL_FIELDS }); } catch (_) { continue; } }
       for (const e of list) {
         if (e.type !== "spell") continue;
         const sys = e.system ?? {};

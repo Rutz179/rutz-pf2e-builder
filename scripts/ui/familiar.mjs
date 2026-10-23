@@ -290,7 +290,7 @@ export class FamiliarBuilder extends foundry.applications.api.ApplicationV2 {
     if (!master) return;
     if (!game.user.isGM && !game.user.can("ACTOR_CREATE")) return ui.notifications.warn(t("Fam.CannotCreate"));
     const owners = Object.fromEntries(Object.entries(master.ownership ?? {}).filter(([k]) => k !== "default"));
-    const attr = castingForClass(master.class?.slug ?? master.class?.system?.slug)?.attr ?? "int";
+    const attr = castingForClass(master.class?.slug ?? master.class?.system?.slug, master.class?.flags?.["rutz-pf2e-builder"]?.casting ?? null)?.attr ?? "int";
     const actor = await Actor.create({
       name: t("Fam.DefaultName", { name: master.name }), type: "familiar", img: "icons/creatures/mammals/cat-hunched-glowing-red.webp",
       folder: master.folder?.id ?? null, ownership: { default: 0, ...owners, [game.user.id]: 3 },

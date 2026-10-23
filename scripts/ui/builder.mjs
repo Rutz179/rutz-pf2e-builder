@@ -1,9 +1,10 @@
 import { ATTRS, MAX_LEVEL, MID, attrLabel, debounce, enrich, esc, glyph, rankLabel, rarityLabel, setting, signed, skillLabel, skillSlugs, t, traitLabel } from "../util.mjs";
-import { getDoc, loadIndex, loadSpells, norm, refOf } from "../data.mjs";
+import { cachedIndex, getDoc, loadIndex, loadSpells, norm, refOf } from "../data.mjs";
 import { TRADITIONS, casterDefaults, castingSummary, hasTable, isCantripRef, kindLabel, learnCount, learnText, maxSpellRank, plannedUuids, spellSlotsAt, slotsText, spellsAt, traditionLabel } from "../spells.mjs";
 import { planSpells } from "../class-spells.mjs";
 import {
-  BOOST_LEVELS, ancestryBoostSlots, ancestryFlaws, attributes, backgroundBoostSlots, context, entryOf, featsForSlot,
+  BOOST_LEVELS, ancestryBoostSlots, ancestryFlaws, attributes, backgroundBoostSlots, boostDone, boostGroupAt, boostIndexAt, boostList,
+  context, entryOf, featsForSlot, gradualBoosts,
   intBonusLevels, keyAttribute, levelOneSkills, maxRankAt, openItems, prereqState, progression, rarityAllowed, skillRanks, slotLevel, slotsAt
 } from "../rules.mjs";
 import { activePlanId, clearDraft, clonePlan, draftOf, lockedAt, maxPlans, newPlan, planFromActor, plansOf, picksOf, refreshSheetPlan, saveDraft, savePlans, setPick } from "../plan.mjs";
@@ -13,6 +14,7 @@ import { applyCreation, applyRebuild, applyUpTo, pendingUpTo, rebuildLoss } from
 import { canCreateMore, canUpload, requestActor, uploadImage } from "../create.mjs";
 import { openCompare } from "./compare.mjs";
 import { deityAlignment } from "../deity-alignment.mjs";
+import { editHomebrewCasting, homebrewBoxHtml } from "./casting.mjs";
 
 /* ======================================================================== *
  * The builder window.
@@ -203,7 +205,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       const slots = cls ? slotsAt(prog, lv) : [];
       const icons = slots.map(s => `<i class="fa-solid ${GROUP_ICON[s.group]} ${plan.feats[s.id] ? "filled" : ""}"></i>`).join("")
         + (cls && lv > 1 && prog.skillIncrease.includes(lv) ? `<i class="fa-solid fa-arrow-up ${plan.skills.increases[lv] ? "filled" : ""}"></i>` : "")
-        + (prog.boosts.includes(lv) ? `<i class="fa-solid fa-plus ${(plan.boosts.levels[lv] ?? []).length >= 4 ? "filled" : ""}"></i>` : "");
+        + (prog.boosts.includes(lv) ? `<i class="fa-solid fa-plus ${boostDone(plan, lv) ? "filled" : ""}"></i>` : "");
       const dot = lv <= sheetLv ? "lock" : openSteps.has(`level-${lv}`) ? "open" : cls ? "done" : "";
       const atPreview = lv === this.ui.previewLevel ? "preview" : "";
       levels.push(`<button type="button" class="rpb-lv ${this.ui.step === `level-${lv}` ? "on" : ""} ${atPreview}" data-a="step" data-step="level-${lv}">
@@ -457,8 +459,19 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       const key = keyAttribute(plan, cls);
       rows.push(`<tr><th>${esc(cls.name)} <small>${t("Attr.Key")}</small></th>${ATTRS.map(a => cell("class", a, { on: key === a, fixed: (cls.keyAbility ?? []).length === 1 && key === a, allowed: !locked1 && (cls.keyAbility ?? []).includes(a) })).join("")}</tr>`);
     }
+    const gab = gradualBoosts();
     for (const lv of BOOST_LEVELS) {
-      const picks = plan.boosts.levels[lv] ?? [];
+      if (gab && lv > 1) {
+        // Gradual: one boost a level, picked on each level's page; here, which level took what.
+        const list = boostList(plan, lv);
+        const at = a => { const i = list.indexOf(a); return i >= 0 ? lv - 3 + i : null; };
+        rows.push(`<tr class="gab ${lv - 3 > this.ui.previewLevel ? "future" : ""}"><th>Lv ${lv - 3}–${lv} <small>${t("Attr.Gradual", { n: list.filter(a => ATTRS.includes(a)).length })}</small></th>${ATTRS.map(a => {
+          const l = at(a);
+          return `<td><button type="button" class="b ${l ? "on" : ""}" data-a="step" data-step="level-${l ?? lv - 3}" data-tooltip="${esc(t("Attr.GradualCell", { level: l ?? lv - 3 }))}">${l ? `<small>${l}</small>` : ""}</button></td>`;
+        }).join("")}</tr>`);
+        continue;
+      }
+      const picks = boostList(plan, lv).filter(a => ATTRS.includes(a));
       const locked = lockedAt(plan, lv);
       rows.push(`<tr class="${lv > this.ui.previewLevel ? "future" : ""}"><th>Lv ${lv} <small>${t("Attr.FourFree", { n: picks.length })}</small></th>${ATTRS.map(a => cell(`lv-${lv}`, a, { on: picks.includes(a), allowed: !locked && (picks.includes(a) || picks.length < 4) })).join("")}</tr>`);
     }
@@ -467,7 +480,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
     const total = ATTRS.map(a => `<td class="total ${res.key === a ? "key" : ""}">${signed(res.mods[a])}${res.partial[a] ? `<sup data-tooltip="${esc(t("Attr.Partial"))}">½</sup>` : ""}</td>`).join("");
     return `<div class="rpb-pane">
       <h3>${t("Attr.Title")}</h3>
-      ${locked1 ? this.lockedNote(plan) : `<p class="rpb-hint">${t("Attr.Hint")}</p>`}
+      ${locked1 ? this.lockedNote(plan) : `<p class="rpb-hint">${t(gab ? "Attr.HintGradual" : "Attr.Hint")}</p>`}
       <table class="rpb-boosts"><thead><tr><th></th>${head}</tr></thead><tbody>${rows.join("")}</tbody>
         <tfoot><tr><th>${t("Attr.Result", { level: this.ui.previewLevel })}</th>${total}</tr></tfoot></table>
     </div>`;
@@ -563,8 +576,25 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
         <div class="rpb-skillgrid">${grid}</div></section>`);
     }
     // Boosts.
-    if (prog.boosts.includes(lv)) {
-      const picks = plan.boosts.levels[lv] ?? [];
+    if (prog.boosts.includes(lv) && gradualBoosts() && boostGroupAt(lv) > 1) {
+      // Gradual Ability Boosts: this level's one boost; no attribute twice in the same group of four levels.
+      const g = boostGroupAt(lv);
+      const k = boostIndexAt(lv);
+      const list = boostList(plan, g);
+      const mine = ATTRS.includes(list[k]) ? list[k] : null;
+      const elsewhere = a => { const i = list.indexOf(a); return i >= 0 && i !== k ? g - 3 + i : null; };
+      const before = attributes(plan, lv - 1, idx).mods;
+      const after = attributes(plan, lv, idx);
+      parts.push(`<section><h4><i class="fa-solid fa-plus"></i> ${t("Level.BoostGradual", { n: mine ? 1 : 0 })}</h4><div class="rpb-boostrow">${ATTRS.map(a => {
+        const other = elsewhere(a);
+        const tip = other ? t("Level.BoostTakenAt", { level: other }) : `${attrLabel(a)} ${signed(before[a])} → ${signed(after.mods[a])}${after.partial[a] ? " (½)" : ""}`;
+        return `<button type="button" class="${mine === a ? "on" : ""} ${other ? "taken" : ""}" data-a="boost" data-row="gab-${lv}" data-attr="${a}" ${locked || !this.editable || other ? "disabled" : ""}
+          data-tooltip="${esc(tip)}">
+          <span class="nm"><b>${esc(attrLabel(a))}</b><em>${other ? `<small>Lv ${other}</small>` : signed(after.mods[a])}</em></span>${this.boostPips(before[a], after.mods[a], !!after.partial[a], mine === a)}</button>`;
+      }).join("")}</div>
+        <p class="rpb-hint">${t("Level.BoostGradualHint", { from: g - 3, to: g })}</p></section>`);
+    } else if (prog.boosts.includes(lv)) {
+      const picks = boostList(plan, lv).filter(a => ATTRS.includes(a));
       const before = attributes(plan, lv - 1, idx).mods;
       const after = attributes(plan, lv, idx);
       parts.push(`<section><h4><i class="fa-solid fa-plus"></i> ${t("Level.Boosts", { n: picks.length })}</h4><div class="rpb-boostrow">${ATTRS.map(a =>
@@ -688,6 +718,7 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
       <div class="rpb-casting"><label>${t("Spells.Tradition")} ${trad}</label><label>${t("Spells.Mode")} ${mode}</label><label>${t("Spells.Attr")} ${attr}</label>
         ${def && this.editable ? `<button type="button" data-a="cast-default"><i class="fa-solid fa-rotate"></i> ${t("Spells.Default", { what: def.tradition ? traditionLabel(def.tradition) : kindLabel(def.mode) })}</button>` : ""}</div>
       ${def && !def.tradition ? `<p class="rpb-hint">${t("Spells.SubclassHint")}</p>` : ""}
+      ${plan.class ? homebrewBoxHtml(entryOf(this.idx, plan.class), { editable: this.editable, casting: c }) : ""}
       ${learn ? `<p class="rpb-learn big"><i class="fa-solid fa-book"></i> ${t(`Spells.Mode_${learn.mode}`)}</p>` : ""}
       <div class="rpb-classspells" data-level="${this.planLevel(plan)}" data-wide="1"></div>
       ${c?.tradition ? `<table class="rpb-spelltable"><thead><tr><th></th><th>${t("Spells.PerDay")}</th><th>${t("Spells.LearnHere")}</th><th>${t("Spells.Cantrips")}</th><th>${t("Spells.RankedSpells")}</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table>` : `<p class="rpb-dim">${t("Spells.NoCastingHint")}</p>`}
@@ -1226,9 +1257,21 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
         if (b.background[k] === a) delete b.background[k]; else b.background[k] = a;
       } else if (row === "class") {
         b.classKey = b.classKey === a ? null : a;
+      } else if (row.startsWith("gab-")) {
+        // Gradual: the boost of one level sits at its place in the group's list.
+        const lv = Number(row.slice(4));
+        const g = boostGroupAt(lv);
+        const k = boostIndexAt(lv);
+        if (!g || k === null) return;
+        const list = (b.levels[g] ??= []);
+        while (list.length < k) list.push(null);
+        if (list[k] === a) list[k] = null;
+        else if (!list.some((x, i) => i !== k && x === a)) list[k] = a;
+        while (list.length && !ATTRS.includes(list[list.length - 1])) list.pop();
       } else if (row.startsWith("lv-")) {
         const lv = row.slice(3);
-        const list = (b.levels[lv] ??= []);
+        const list = (b.levels[lv] ??= []).filter(x => ATTRS.includes(x));
+        b.levels[lv] = list;
         const i = list.indexOf(a);
         if (i >= 0) list.splice(i, 1); else if (list.length < 4) list.push(a);
       }
@@ -1344,6 +1387,15 @@ export class BuilderApp extends foundry.applications.api.ApplicationV2 {
         this.ui.detail = null; this.ui.search = ""; this.ui.limit = 200; this._sameView = false;
         return this.render();
       case "spell-setup": return this.spellSetup();
+      case "hb-cast": {
+        const entry = entryOf(this.idx, this.plan?.class);
+        if (!(await editHomebrewCasting(entry, this.idx))) return;
+        const d = casterDefaults(this.plan, this.idx);
+        if (d && this.editable && !this.plan.spells?.casting?.tradition && d.tradition) {
+          return this.mutate(p => { p.spells.casting = { tradition: d.tradition, mode: d.mode, attr: d.attr }; });
+        }
+        return this.render();
+      }
       case "spell-resync": {
         const { syncActorClassSpells } = await import("../class-spells.mjs");
         const done = await syncActorClassSpells(this.actor);
@@ -1608,8 +1660,15 @@ export function statsHtml(st) {
 }
 
 let open = new Map();
-export function refreshBuilders() {
-  for (const app of open.values()) if (app.rendered) app.render();
+/** Draw open builders again — with fresh lists when the index was read again (packs or world items changed). */
+export async function refreshBuilders() {
+  for (const app of open.values()) {
+    if (!app.rendered) continue;
+    if (app.idx && cachedIndex() !== app.idx) {
+      try { app.idx = await loadIndex(); } catch (err) { console.warn(`${MID} | reload`, err); }
+    }
+    app.render();
+  }
 }
 
 function alignmentHtml(entry) {
