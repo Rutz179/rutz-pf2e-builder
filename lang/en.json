@@ -30,7 +30,7 @@
       "BackLevel": "Back to level {level}"
     },
     "Plan": {
-      "SheetHint": "Sheet plan — picks up from the sheet as it is now and plans the levels ahead. You can apply it when you level up.",
+      "SheetHint": "Plans the levels ahead from the sheet as it is now.",
       "FreeHint": "A build from scratch — apply it to an existing character with 'Rebuild with this'.",
       "ActiveHint": "Main plan, applied on level-up",
       "AddHint": "Add a plan",
@@ -47,17 +47,17 @@
       "Delete": "Delete plan",
       "DeleteBody": "Delete the plan '{name}'? This cannot be undone.",
       "MakeActive": "Make main plan",
-      "FreeNote": "A build from scratch. Applying it rebuilds the character with this build (up to the current level). Gear, coins and effects are kept.",
+      "FreeNote": "Applying rebuilds the character with this build. Gear, coins and effects stay.",
       "Convert": "Continue from the sheet",
-      "ConvertHint": "Keeps the sheet as it is for the levels so far, and turns this into a plan that carries over only the picks for later levels.",
+      "ConvertHint": "Keeps past levels as on the sheet; only picks for later levels carry over.",
       "Rebuild": "Rebuild with this (Lv {level})",
       "RebuildTitle": "Rebuild with '{name}'",
       "RebuildBody": "{actor} will be rebuilt with this build up to level {level}.",
       "RebuildLose": "Removed and added again",
       "RebuildLoseList": "{abc} · {feats} feats · {spells} spells · attribute boosts · skill ranks",
-      "RebuildKeep": "Gear, coins, effects, conditions and HP are kept. This can't be undone — duplicate the actor first if you want a backup.",
+      "RebuildKeep": "Gear, coins, effects, conditions and HP stay. Irreversible — duplicate first.",
       "RebuildDone": "{name} — rebuilt with the new build ({n} changes). This plan now follows the sheet.",
-      "ConvertAsk": "Continue '{name}' from the current sheet? The levels so far will match the sheet; the feats, skills and spells picked for later levels are kept.",
+      "ConvertAsk": "Continue '{name}' from the current sheet? Only picks for later levels are kept.",
       "Converted": "'{name}' now continues from the sheet."
     },
     "Top": {
@@ -69,17 +69,17 @@
       "OnlyMet": "Prerequisites met only",
       "Legacy": "Include legacy",
       "LegacyHint": "Pre-remaster (legacy) content",
-      "PickHint": "Click an entry on the left to see it here. Double-click or press 'Choose' to pick it.",
+      "PickHint": "Click to read it here; double-click or 'Choose' to pick.",
       "More": "Show {n} more",
       "Empty": "Nothing matches.",
       "Count": "{n} entries",
       "LegendOk": "met",
       "LegendNo": "not met",
       "LegendUnknown": "check manually",
-      "LegendHint": "Prerequisites are read from their text. ? means a prerequisite the builder can't judge automatically (worships a deity, can cast focus spells, 'A or B' …) — read it yourself. ? entries stay visible even with 'Prerequisites met only' on.",
+      "LegendHint": "?: a prerequisite the builder can't judge. Check it yourself.",
       "LegacyDisabled": "The GM has hidden legacy content for the whole world in the settings.",
       "Boost": "Boosts",
-      "BoostHint": "Only options that boost every attribute you picked (fixed boosts or a choice of two — free boosts don't count)",
+      "BoostHint": "Only ones boosting every picked attribute. Free boosts don't count.",
       "Flaw": {
         "any": "Flaw: any",
         "none": "No flaw",
@@ -95,9 +95,9 @@
       "HeritageHint": "This ancestry's heritages first, then versatile heritages (any ancestry).",
       "Background": "Choose a background",
       "Class": "Choose a class",
-      "ArchetypeHint": "Archetype feats: take the Dedication feat first, then that archetype's feats. Another Dedication feat only after two more feats from that archetype.",
+      "ArchetypeHint": "Dedication first. Another Dedication only after two more of its feats.",
       "Deity": "Choose a deity (optional)",
-      "DeityHint": "Not required. Classes that need a deity (cleric, champion …) choose one here. Click it again to deselect.",
+      "DeityHint": "Optional unless the class needs one. Click again to deselect.",
       "Class2": "Choose a second class"
     },
     "Locked": {
@@ -109,11 +109,11 @@
       "UnlockHint": "Allow changing the feats, attribute boosts and skill increases of levels already on the sheet.",
       "RelockHint": "Lock again (your changes stay in the plan).",
       "UnlockTitle": "Unlock past levels",
-      "UnlockBody": "Levels up to Lv {level} are already on the sheet. Once unlocked, you can change their feats, attribute boosts and skill increases in the plan, and <b>applying the plan</b> then <b>replaces</b> the sheet's feat in that slot (the original feat is deleted). Ancestry, background and class stay locked."
+      "UnlockBody": "Levels up to Lv {level} become editable. Applying deletes the feats you replace."
     },
     "Attr": {
       "Title": "Attribute boosts",
-      "Hint": "Choose the boosts from your ancestry, background and class, plus 4 free boosts at level 1. Levels 5, 10, 15 and 20 give 4 more each. From level 5, boosting an attribute that's already +4 or higher is a partial boost (two make +1).",
+      "Hint": "Pick the level-1 boosts. Levels 5, 10, 15 and 20 give 4 more each.",
       "Fixed": "fixed",
       "Free": "free",
       "OneOf": "one of two",
@@ -125,12 +125,12 @@
       "Partial": "Partial boost (one more makes +1)",
       "Gradual": "gradual {n}/4",
       "GradualCell": "Pick on the level {level} page",
-      "HintGradual": "Choose the boosts from your ancestry, background and class, plus 4 free boosts at level 1. Gradual Ability Boosts is on: instead of 4 boosts at levels 5, 10, 15 and 20, you get one at each of levels 2–5, 7–10, 12–15 and 17–20 (a different attribute each time within those four) — pick them on each level's page; the numbers below show which level boosted what. At +4 or higher a boost is partial (two make +1).",
-      "Key2Hint": "The second class's key attribute boost and class DC (Dual Class Items). A class boost that would raise an attribute already at +4 is dropped."
+      "HintGradual": "Pick the level-1 boosts. Gradual boosts are picked on each level's page.",
+      "Key2Hint": "Second class's key boost and class DC. Dropped if already +4."
     },
     "Skills": {
       "Title": "Skills (level 1)",
-      "Hint": "Skills from your class and background are trained automatically. Additional skills to pick: {n} ({left} left), including your Intelligence modifier.",
+      "Hint": "Class and background skills are automatic. Pick {n} more ({left} left).",
       "Auto": "Trained by your class or background",
       "Lores": "Background lore:",
       "Lv1": "Trained at Lv 1",
@@ -155,7 +155,7 @@
       "DetailHint": "Click a feat or feature to read it here.",
       "BoostGradual": "Attribute boost — gradual ({n}/1)",
       "BoostTakenAt": "Already boosted at level {level} (same group of four levels)",
-      "BoostGradualHint": "Gradual Ability Boosts: one boost at each of levels {from}–{to}, a different attribute each time. At +4 or higher a boost is partial (½); the second partial boost gives +1."
+      "BoostGradualHint": "One per level from {from} to {to}, a different attribute each time."
     },
     "Group": {
       "ancestry": "Ancestry feat",
@@ -187,7 +187,7 @@
       "AllSet": "Everything up to level {level} is chosen.",
       "Notes": "Notes",
       "Create": "Create character",
-      "CreateHint": "Creates a level {level} character. The rest of the level plan stays on the sheet, ready to apply when you level up.",
+      "CreateHint": "Creates a level {level} character. The rest of the plan waits for level-up.",
       "CreateNeed": "Choose ancestry, heritage, background, class, key attribute, the 4 level-1 boosts and level-1 skills first.",
       "ApplyCurrent": "Apply what's missing up to level {level}",
       "Stats": "Preview at level {level}",
@@ -241,7 +241,7 @@
       "AC": "AC (no armor)",
       "ClassDC": "Class DC",
       "Speed": "Speed",
-      "Note": "Calculated by PF2e. Equipment, choices made when applying, and items granted by feats may be missing."
+      "Note": "Calculated by PF2e; gear and some choices may be missing."
     },
     "Compare": {
       "Title": "Compare — {name}",
@@ -254,7 +254,7 @@
     },
     "Create": {
       "DefaultName": "New adventurer",
-      "Confirm": "Create <b>{name}</b> as a level {level} character? PF2e may ask a few questions afterwards.",
+      "Confirm": "Create <b>{name}</b> as a level {level} character? PF2e may ask a few things.",
       "Working": "Creating the character…",
       "Done": "{name} is ready! Opening the sheet.",
       "Failed": "Could not create the character:",
@@ -304,13 +304,13 @@
     },
     "Welcome": {
       "Title": "Character Builder",
-      "Body": "You don't have a character yet. Build one step by step? (You can always open it with 'Create Character' in the Actors tab.)",
+      "Body": "No character yet. Build one? 'Create Character' in the Actors tab also opens it.",
       "Yes": "Build",
       "Later": "Later"
     },
     "Translation": {
       "Title": "Korean translation",
-      "Body": "The character builder is tuned to the <b>Rutz Korean translation module</b> (names, descriptions, prerequisites). Using it alongside is recommended.",
+      "Body": "The builder is tuned to the <b>Rutz Korean translation module</b>; use it alongside.",
       "Others": "Other Korean translation modules active: {list}",
       "Hint": "This notice is shown only once. The builder also works with other translations."
     },
@@ -324,9 +324,9 @@
         "Data": "Compendiums & translation"
       },
       "PerPlayer": "Characters per player",
-      "PerPlayerHint": "How many characters a player may create with the builder (0 = no limit). Characters already assigned count too. GMs have no limit.",
+      "PerPlayerHint": "0 = no limit. Already-assigned characters count; GMs excepted.",
       "Ownership": "Other players' access to new characters",
-      "OwnershipHint": "'Follow the world' uses the default access most player characters in this world have. The creating player is always the owner.",
+      "OwnershipHint": "'Follow the world' copies most PCs' default access. The creator is always owner.",
       "OwnWorld": "Follow the world",
       "OwnNone": "None",
       "OwnLimited": "Limited",
@@ -350,32 +350,32 @@
       "ImageFolder": "Upload folder for pictures",
       "ImageFolderHint": "Blank: worlds/[world-id]/characters",
       "Packs": "Compendiums to read (advanced)",
-      "PacksHint": "Comma-separated pack IDs (e.g. pf2e.feats-srd, my-homebrew.feats). Blank: picked automatically by name (feat · ancestr · heritage · background · class).",
+      "PacksHint": "Comma-separated pack IDs. Blank: chosen automatically.",
       "TrModule": "Rutz Korean translation module ID",
       "TrModuleHint": "Blank: looks for a Korean translation module with 'rutz' in its ID, title or authors.",
       "TrUrl": "Translation module install URL",
       "TrUrlHint": "Manifest or page URL shown in the notice (optional).",
       "HideLegacy": "Hide legacy content for everyone",
-      "HideLegacyHint": "Hides legacy entries in every user's builder in this world. Off by default (legacy included); when on, the per-window 'Include legacy' toggle is disabled. Existing plans are kept.",
+      "HideLegacyHint": "Hides legacy entries in every user's builder. Existing plans are kept.",
       "PacksMenu": "Compendiums the builder reads",
       "PacksMenuLabel": "Choose compendiums",
-      "PacksMenuHint": "Choose which packs ancestries, classes and feats are read from, and whether homebrew in the world's Items tab is read too. By default, companion modules' animal and eidolon packs (Companion Compendia, etc.), packs disabled in the compendium browser, and system packs replaced by a translation module are left out.",
+      "PacksMenuHint": "Choose the packs to read ancestries, classes and feats from, plus world homebrew.",
       "TidyChoices": "Tidy PF2e choice windows",
-      "TidyChoicesHint": "In the 'choose one' windows PF2e opens when adding a class or feat (bard muse, cleric doctrine …), leave out packs disabled in the compendium browser and system packs replaced by a translation, and list each option only once. Answers picked in the builder are applied without a window regardless of this setting.",
+      "TidyChoicesHint": "Drops unused packs and duplicates from PF2e's 'choose one' windows.",
       "LevelCantrips": "Allow cantrips as level-up spells",
-      "LevelCantripsHint": "For spellbook and familiar classes (wizard, witch …), a cantrip may count as one of the two spells learned each level. The rules text ('ranks for which you have spell slots') is ambiguous — decide at your table.",
+      "LevelCantripsHint": "Spellbook and familiar classes may count a cantrip as a level-up spell.",
       "AutoClassSpells": "Add class spells automatically",
-      "AutoClassSpellsHint": "Even when a feat or class feature is gained outside the builder (directly on the sheet), the spells it grants (e.g. a witch lesson's hex and familiar spell) are added to the spellcasting entries automatically.",
+      "AutoClassSpellsHint": "Also adds spells from feats and class features gained on the sheet.",
       "AllowRebuild": "Players may rebuild their character in the builder",
       "AllowRebuildHint": "When off, only the GM can rebuild a character from a from-scratch build.",
       "SlotClassBonus": "Table rule: extra class spell slots",
-      "SlotClassBonusHint": "Adds this many slots to every rank the class table has slots in (0 = as written). Used when the builder sets slots and in the planner's spells-per-day. The builder only raises slots, never lowers them, so numbers set by hand stay.",
+      "SlotClassBonusHint": "Extra slots for every rank that has slots. 0 = as written.",
       "SlotArchetype": "Table rule: archetype spell slots",
-      "SlotArchetypeHint": "Slots per rank the builder gives an archetype's spellcasting entry for each rank its basic/expert/master spellcasting feats have opened (as written: 1). “Don't touch” leaves archetype entries alone. The entry is found by name (one with the archetype's class in it, e.g. “Archetype Psychic”) and isn't created if missing. Raised only, never lowered.",
+      "SlotArchetypeHint": "Slots per opened rank in the archetype's spell entry. As written: 1.",
       "SlotArchetypeOff": "Don't touch",
       "SlotArchetypeN": "{n} per rank",
       "SlotStrays": "Warn about archetype spells in the class entry",
-      "SlotStraysHint": "Names spells in the class's spellcasting entry that look like they came from an archetype's list (not on the class's tradition). Turn off if your table allows it."
+      "SlotStraysHint": "Warns when the class entry holds spells from an archetype's list."
     },
     "Ask": {
       "Title": "Choices",
@@ -388,7 +388,7 @@
     },
     "Spells": {
       "Title": "Spell plan",
-      "Hint": "Choose how the character casts and pick the spells to learn each level (spellbook / repertoire). Creating the character or applying the plan sets up the spellcasting entry automatically, along with the spells granted by the class and subclass choices (muse, bloodline, doctrine …) — e.g. a bard's Counter Performance, Courageous Anthem and muse spells. Focus spells go into their own focus spell entry.",
+      "Hint": "Pick the casting style and spells per level; entries are set up automatically.",
       "Tradition": "Tradition",
       "Mode": "Type",
       "Attr": "Attribute",
@@ -403,7 +403,7 @@
       "Cantrips": "Cantrips",
       "Spells": "Spells (up to rank {rank})",
       "PickTitle": "Level {level} spells · {n} chosen",
-      "PickHint": "You can pick several — double-click or 'Choose'; do it again to remove. Faded rows are spells already planned at another level.",
+      "PickHint": "Double-click or 'Choose' to add or remove. Faded: picked at another level.",
       "AllTraditions": "Show other traditions",
       "Remove": "Remove from this level",
       "Loading": "Reading spells…",
@@ -422,20 +422,20 @@
       "AddSpell": "Spell",
       "LearnHere": "Learn at this level:",
       "PerDay": "Spells per day:",
-      "ListHint": "This class prepares from its tradition's entire list each day, so there's nothing to learn. You can still note spells you use often here.",
+      "ListHint": "Prepares from the whole list daily; nothing to learn, but you can note favorites.",
       "RankedSpells": "Spells",
       "GoLevel": "Go to level {level}",
       "FocusSpells": "Focus spells",
       "FocusPool": "{n} Focus Point(s)",
       "Granted": "Spells from your class",
-      "NoClassSpells": "No spells from class features, subclass or planned feats yet (they appear once you choose a patron, bloodline, muse, etc.).",
+      "NoClassSpells": "No granted spells yet; picking a patron, bloodline or muse adds them.",
       "ClassGives": "Spells your class grants up to level {level} (depends on planned feats)",
       "UseTradition": "Use tradition: {tradition}",
       "PickTitleShort": "Level {level} spells",
       "SlotsSet": "Spells per day (class table)",
-      "Mode_book": "Spellbook: record a set number at 1st level, then add 2 spells of any rank each level. Each day, prepare as many as your slots allow.",
+      "Mode_book": "Spellbook: set number at level 1, 2 more each level; prepare up to your slots.",
       "Mode_rep": "Repertoire: learn one spell of a rank each time you gain a slot of that rank (slots = spells known).",
-      "Mode_list": "Whole list: each day, prepare as many as your slots allow from your tradition's entire list; there are no spells to learn.",
+      "Mode_list": "Whole list: prepare up to your slots daily from your tradition's list.",
       "Learn": {
         "List": "none (prepare from the list)",
         "Cantrips": "{n} cantrips",
@@ -460,13 +460,19 @@
       "AnyInclCantrip": "(cantrips count)",
       "EntryNameNoClass": "{tradition} Spells",
       "Resync": "Sync class spells",
-      "ResyncHint": "Adds the spells granted by the sheet's class features and feats (patron, lessons, bloodline …) to the spellcasting and focus entries, and sets the daily slots from the class table. Spells from an archetype's features (Psychic Dedication's conscious mind, etc.) are left out.",
+      "ResyncHint": "Adds spells from class features and feats; sets daily slots by the class table.",
       "Resynced": "Class spells synced: {list}",
-      "Strays": "“{entry}” has spells that look like they came from an archetype's list: {list} — they aren't on this class's tradition. Remove them unless they were picked on purpose. Archetype spells belong in the archetype's own entry, with one slot per rank by the archetype rules.",
+      "Strays": "“{entry}” has spells off this class's tradition: {list}. Remove unless intended.",
       "ResyncNone": "No class spells to add.",
       "Tick": "Check to learn it at this level",
       "Untick": "Uncheck to remove it",
-      "ArchSlotsSet": "Archetype slots (table rule): {name}"
+      "ArchSlotsSet": "Archetype slots (table rule): {name}",
+      "FontMade": "{name}: {n} extra slots",
+      "FontSet": "{name}: {n} slots of rank {rank}",
+      "Font": {
+        "Healing": "Healing Font",
+        "Harmful": "Harmful Font"
+      }
     },
     "DeityAlignment": {
       "good": "Good",
@@ -476,7 +482,7 @@
     },
     "Packs": {
       "Title": "Compendiums the builder reads",
-      "Hint": "Only checked packs appear in the builder lists (ancestries, heritages, backgrounds, classes, deities, feats, spells). Rows changed from the default are highlighted.",
+      "Hint": "Only checked packs show in the builder. Changed rows are highlighted.",
       "Reset": "Defaults",
       "Save": "Save",
       "Saved": "Compendium selection saved. Open builders will reload.",
@@ -486,7 +492,7 @@
       "WhyMirror": "replaced by a translation module",
       "WhySystem": "system pack off (translation pack used)",
       "World": "This world's Items tab",
-      "WorldHint": "Homebrew ancestries, heritages, backgrounds, classes, deities, feats and spells made right in the Items sidebar (not in a compendium). {n} here now.",
+      "WorldHint": "Homebrew made right in the Items sidebar. {n} now.",
       "World_all": "Read them all",
       "World_visible": "Players see only the ones they have permission for (Limited or better)",
       "World_off": "Don't read them"
@@ -495,18 +501,18 @@
       "Pick": "Choose…",
       "Browse": "Browse {n} options",
       "OpenSheet": "Open item sheet",
-      "PickHint": "Click an entry to read it on the right; double-click or press 'Choose' to pick it.",
+      "PickHint": "Click to read it on the right; double-click or 'Choose' to pick.",
       "Back": "Back",
       "AskPeek": "Pick one to read its description here."
     },
     "Setup": {
       "Button": "Spell setup",
       "Title": "Spell setup",
-      "Book": "Write {c} cantrips and {s} spells in your spellbook → prepare {pc} cantrips and {ps} spells each day.",
+      "Book": "Spellbook: {c} cantrips, {s} spells → prepare {pc} cantrips, {ps} spells a day.",
       "Rep": "Learn {c} cantrips and {s} spells for your repertoire (cast any of them, up to your slots).",
       "List": "Prepare {pc} cantrips and {ps} spells from your whole list each day.",
       "NoTradition": "tradition not set (comes from your subclass)",
-      "FeatHint": "Focus spells come from class features, your subclass and planned feats; change the feats and this list changes too. Creating the character sets up the spellcasting entries, focus spells and slots automatically.",
+      "FeatHint": "Focus spells come from class features, subclass and planned feats.",
       "Go": "Choose spells now",
       "Later": "Later"
     },
@@ -518,10 +524,10 @@
       "Create": "Create familiar actor",
       "DefaultName": "{name}'s Familiar",
       "Created": "Familiar '{name}' created.",
-      "CannotCreate": "You don't have permission to create actors. Ask the GM to create a familiar actor with this character as its master.",
+      "CannotCreate": "You can't create actors. Ask the GM to make the familiar.",
       "NotOwner": "You don't own this familiar.",
       "Count": "Abilities {n} / {total}",
-      "CountHint": "Familiar and master abilities per day, as PF2e calculates them from class features and feats (Familiar, Enhanced Familiar, witch's familiar …).",
+      "CountHint": "Familiar and master abilities per day, as PF2e calculates.",
       "Over": "{n} abilities — over the limit of {total}.",
       "NoneYet": "No abilities yet.",
       "NoFamiliar": "No familiar actor has this character as master. Create one above.",
@@ -533,7 +539,7 @@
       "Add": "Add to familiar",
       "AddAnyway": "Add anyway",
       "AddAnywayBody": "'{name}' requirements not met:",
-      "Patron": "Granted by a witch's patron — applied automatically with the patron, not chosen separately.",
+      "Patron": "From the witch's patron; applied automatically with it.",
       "Specific": "Only for a specific familiar ({folder}) — have the GM confirm yours qualifies.",
       "Kind": {
         "familiar": "Familiar abilities",
@@ -543,7 +549,7 @@
       "KindHint": {
         "familiar": "Abilities the familiar itself gains.",
         "master": "Abilities you (the master) gain — they count with the familiar abilities.",
-        "special": "Abilities only certain familiars (object familiars, undead, shikigami …) or witch patrons have. Not available to just any familiar."
+        "special": "Abilities only certain familiars or witch patrons have."
       },
       "Need": {
         "Level": "Level {n}+",
@@ -565,8 +571,8 @@
     "Homebrew": {
       "Setup": "Set up this class's spellcasting",
       "Edit": "Change",
-      "NoTable": "If this class casts spells: the builder has no spell table for it (homebrew or from another module), so spells per day and how many to learn aren't counted. You can still pick a tradition above and add spells — or ask the GM to set it up.",
-      "NoTableGm": "If this class casts spells: the builder has no spell table for it (homebrew or from another module). Set it up once and every character of this class in this world gets spells per day and spells to learn.",
+      "NoTable": "If it casts: no spell table, so counts aren't tracked. The GM can set one up.",
+      "NoTableGm": "If it casts: no spell table. Set one once for every character of this class here.",
       "FromGm": "Homebrew spellcasting (set by the GM):",
       "FromItem": "Homebrew spellcasting (from the class item):",
       "Title": "Spellcasting — {name}",
@@ -590,7 +596,7 @@
       "First": "1st-rank spells at level 1",
       "Per": "Spells added each level",
       "BookHint": "Cantrips · 1st-rank spells at level 1 · spells added each level after that (a wizard: 10 · 5 · 2).",
-      "WorldNote": "Saved in this world for the class slug <code>{slug}</code>. Homebrew authors can ship this in the class item instead — see the wiki (flags.rutz-pf2e-builder.casting).",
+      "WorldNote": "Saved in this world as <code>{slug}</code>. To ship it in the class item, see the wiki.",
       "Save": "Save",
       "Remove": "Remove",
       "Cancel": "Cancel",
@@ -598,8 +604,8 @@
       "Removed": "Spellcasting for {name} removed."
     },
     "Dual": {
-      "HintFirst": "This world runs dual-class characters (Dual Class Items module): after the first class, pick the second in the next tab.",
-      "Hint": "Dual class: both classes' features and class feats, a key attribute boost and a class DC from each, the better HP and proficiencies, and skill feats, general feats and skill increases at every level either class gives them. On the sheet, Dual Class Items keeps both class items and gives the second class its own feat ladder."
+      "HintFirst": "Dual-class world: pick the first class, then the second in the next tab.",
+      "Hint": "Gets both classes' features and feats; HP and proficiencies use the better one."
     }
   }
 }

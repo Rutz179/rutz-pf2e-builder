@@ -17,7 +17,10 @@
     "systems": [
       {
         "id": "pf2e",
-        "type": "system"
+        "type": "system",
+        "compatibility": {
+          "minimum": "7.0.0"
+        }
       }
     ],
     "recommends": [

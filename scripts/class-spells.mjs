@@ -311,6 +311,7 @@ export async function placeClassSpells(actor, casting, level, className = "") {
       }
     }
   }
+  try { done.push(...await placeDivineFont(actor, level)); } catch (err) { console.warn(`${MID} | divine font`, err); }
   if (found.focus.length) {
     const trad = c.tradition ?? found.focus.map(d => d.system?.traits?.traditions?.[0]).find(Boolean) ?? "occult";
     let entry = entryOfKind(actor, "focus", null, className);
@@ -325,6 +326,101 @@ export async function placeClassSpells(actor, casting, level, className = "") {
     // PF2e works out the pool from the focus spells; start it full.
     const max = Number(actor.system?.resources?.focus?.max ?? 0);
     if (max > 0) await actor.update({ "system.resources.focus.value": max }, { rpbApply: true });
+  }
+  return done;
+}
+
+/* ---------------- divine font (cleric) ---------------- */
+
+/*
+ * PF2e asks heal or harm in Divine Font (its choice) but adds no slots. The cleric gets 4 extra slots of
+ * their highest rank of cleric spell slots (5 from 5th level, 6 from 15th), for that spell only. They live
+ * in an entry of their own — "치유의 샘" / "해악의 샘", prepared, divine — with the spell in every slot.
+ * The rank moves up with the class's slots; slots already cast today stay cast.
+ */
+const FONT_SPELL = { heal: "heal", harm: "harm" };
+
+function divineFontOf(actor) {
+  for (const f of actor.itemTypes?.feat ?? []) {
+    if ((f.system?.slug ?? f.slug) !== "divine-font") continue;
+    const choice = f.flags?.pf2e?.rulesSelections?.divineFont;
+    if (FONT_SPELL[choice]) return { feature: f, choice };
+  }
+  return null;
+}
+
+export const fontSlotsAt = level => (level >= 15 ? 6 : level >= 5 ? 5 : 4);
+
+/** The highest rank the cleric's own entry has slots in (else the highest a caster of this level casts). */
+function highestClassRank(actor, level) {
+  const main = classEntryOf(actor, "prepared", "divine", actor.class?.name ?? "");
+  for (let r = 10; r >= 1; r--) if (Number(main?.system?.slots?.[`slot${r}`]?.max ?? 0) > 0) return { rank: r, main };
+  return { rank: Math.max(1, maxSpellRank(level)), main };
+}
+
+async function fontSpellDoc(feature, slug) {
+  // Divine Font's text links both spells ("prepare additional heal or harm spells").
+  for (const [, uuid] of String(await englishText(feature)).matchAll(LINK)) {
+    const doc = await getDoc(uuid);
+    if (doc?.type === "spell" && (doc.system?.slug ?? doc.slug) === slug) return doc;
+  }
+  const pack = game.packs.get(`${game.system.id}.spells-srd`);
+  const idx = await pack?.getIndex({ fields: ["system.slug"] });
+  const hit = idx?.find(e => e.system?.slug === slug);
+  return hit ? getDoc(hit.uuid ?? `Compendium.${pack.collection}.Item.${hit._id}`) : null;
+}
+
+export async function placeDivineFont(actor, level = actor.level) {
+  const done = [];
+  const font = divineFontOf(actor);
+  if (!font || !fromOwnClass(font.feature, actor, ownClassSlugs(actor))) return done;
+  const { rank, main } = highestClassRank(actor, level);
+  const n = fontSlotsAt(level);
+  const key = font.choice === "heal" ? "Healing" : "Harmful";
+  const name = t(`Spells.Font.${key}`);
+  let entry = (actor.itemTypes?.spellcastingEntry ?? []).find(e => e.flags?.[MID]?.divineFont);
+  if (!entry) {
+    [entry] = await actor.createEmbeddedDocuments("Item", [{
+      type: "spellcastingEntry", name,
+      system: { tradition: { value: "divine" }, prepared: { value: "prepared" }, ability: { value: main?.system?.ability?.value ?? "wis" }, proficiency: { value: Number(main?.system?.proficiency?.value ?? 1) || 1 } },
+      flags: { [MID]: { divineFont: font.choice } }
+    }]);
+    done.push(t("Spells.FontMade", { name, n }));
+  } else if (entry.flags[MID].divineFont !== font.choice) {
+    await entry.update({ name, [`flags.${MID}.divineFont`]: font.choice });
+  }
+  // the spell (heal or harm), in this entry
+  const slug = FONT_SPELL[font.choice];
+  const inEntry = (actor.itemTypes?.spell ?? []).filter(sp => sp.system?.location?.value === entry.id);
+  const wrong = inEntry.filter(sp => (sp.system?.slug ?? sp.slug) !== slug);
+  if (wrong.length) await actor.deleteEmbeddedDocuments("Item", wrong.map(sp => sp.id));
+  let spell = inEntry.find(sp => (sp.system?.slug ?? sp.slug) === slug);
+  if (!spell) {
+    const doc = await fontSpellDoc(font.feature, slug);
+    if (!doc) return done;
+    const src = doc.toObject();
+    delete src._id;
+    src._stats = { ...(src._stats ?? {}), compendiumSource: doc.uuid };
+    src.system.location = { ...(src.system.location ?? {}), value: entry.id };
+    [spell] = await actor.createEmbeddedDocuments("Item", [src]);
+  }
+  // n slots at the rank, the spell in each; other ranks emptied (a rank left behind by an earlier level)
+  const upd = {};
+  for (let r = 1; r <= 10; r++) {
+    const cur = entry.system?.slots?.[`slot${r}`] ?? {};
+    const prepared = Object.values(cur.prepared ?? {});
+    if (r === rank) {
+      const want = Array.from({ length: n }, (_, i) => ({ id: spell.id, expended: prepared[i]?.id === spell.id ? !!prepared[i]?.expended : false }));
+      const same = Number(cur.max ?? 0) === n && prepared.length === n && prepared.every((p, i) => p?.id === spell.id && !!p.expended === want[i].expended);
+      if (!same) { upd[`system.slots.slot${r}.max`] = n; upd[`system.slots.slot${r}.prepared`] = want; }
+    } else if (Number(cur.max ?? 0) > 0 || prepared.length) {
+      upd[`system.slots.slot${r}.max`] = 0;
+      upd[`system.slots.slot${r}.prepared`] = [];
+    }
+  }
+  if (Object.keys(upd).length) {
+    await entry.update(upd);
+    if (!done.length) done.push(t("Spells.FontSet", { name, n, rank }));
   }
   return done;
 }

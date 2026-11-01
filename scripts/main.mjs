@@ -223,6 +223,8 @@ Hooks.once("i18nInit", () => {
 });
 
 Hooks.once("init", () => {
+  // Another system's world: nothing is set up (the manifest already limits this module to PF2e).
+  if (game.system.id !== "pf2e" && game.system.id !== "sf2e") return;
   registerSettings();
   Hooks.on("renderSettingsConfig", addSettingsSections);
 });
