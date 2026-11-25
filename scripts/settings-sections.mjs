@@ -30,6 +30,10 @@ const MENUS = {
   packs: { name: "Settings.PacksMenu", hint: "Settings.PacksMenuHint", label: "Settings.PacksMenuLabel", icon: "fa-solid fa-book-atlas", open: () => new PackChooser().render({ force: true }) }
 };
 
+/** A registered name, hint or choice label as text: settings are registered at init, before Foundry has loaded the translations, so what is stored there is the lang key. */
+const loc = v => (typeof v === "string" && v ? game.i18n.localize(v) : v);
+const locChoices = c => (c ? Object.fromEntries(Object.entries(c).map(([k, v]) => [k, loc(v)])) : null);
+
 /** Foundry's registered setting for a key of this module, or null. */
 function registered(key, all = game.settings.settings) {
   return all?.get?.(`${MID}.${key}`) ?? null;
@@ -60,7 +64,7 @@ export function settingsView({ all = game.settings.settings, get = k => game.set
         if (!cfg || (!gm && cfg.scope !== "client")) continue;
         let value;
         try { value = get(key); } catch (_) { value = cfg.default; }
-        rows.push({ key, name: cfg.name ?? key, hint: cfg.hint ?? "", kind: kindOf(cfg), choices: cfg.choices ?? null, range: cfg.range ?? null, value, client: cfg.scope === "client" });
+        rows.push({ key, name: loc(cfg.name ?? key), hint: loc(cfg.hint ?? ""), kind: kindOf(cfg), choices: locChoices(cfg.choices), range: cfg.range ?? null, value, client: cfg.scope === "client" });
       }
       if (rows.length) secs.push({ id: sec, rows });
     }
